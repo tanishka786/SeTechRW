@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-yellow: #f5d34f;
+  --color-brand-gold: #e7c845;
+  --color-brand-orange: #f68529;
+  --color-brand-red: #d51d25;
+  --color-brand-maroon: #991010;
+  --color-ink: #1a0a0a;
+  --color-panel: #111111;
+  --color-accent: #f68529;
+  --color-accent-soft: #f5d34f;
+  --color-amber-50: #fff8e1;
+  --color-amber-100: #fde9a8;
+  --color-amber-200: #f5d34f;
+  --color-amber-400: #e7c845;
+  --color-amber-500: #f68529;
+  --color-amber-600: #d51d25;
+  --color-amber-700: #991010;
+  --color-amber-800: #7a0c0c;
+  --color-amber-900: #5c0808;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: #faf6ee;
+  color: #1a0a0a;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e7c845;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-grid {
+  background-color: #111111;
+  background-image:
+    linear-gradient(rgba(245, 211, 79, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 211, 79, 0.08) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.app-canvas {
+  background-image:
+    radial-gradient(1200px 500px at 80% -10%, rgba(246, 133, 41, 0.12), transparent 55%),
+    radial-gradient(800px 400px at 0% 100%, rgba(153, 16, 16, 0.08), transparent 50%);
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+.live-dot {
+  animation: pulse-live 1.6s ease-in-out infinite;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 220ms ease-out;
+}
