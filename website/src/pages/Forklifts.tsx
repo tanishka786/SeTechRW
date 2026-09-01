@@ -159,7 +159,6 @@ export function Forklifts() {
             render: (row) => <Badge variant={statusVariant(row.status)}>{row.status}</Badge>,
           },
           { key: 'operator', header: 'Operator' },
-          { key: 'battery', header: 'Battery', render: (row) => `${row.battery}%` },
           { key: 'location', header: 'Current location' },
           { key: 'lastActive', header: 'Last active', render: (row) => relativeUpdated(row.lastActive) },
         ]}

@@ -1,4 +1,4 @@
-import { Battery, MapPin, Pencil, Trash2, User } from 'lucide-react';
+import { MapPin, Pencil, Trash2, User } from 'lucide-react';
 import type { Forklift } from '../../types';
 import { relativeUpdated } from '../../utils/formatters';
 import { Badge, statusVariant } from '../ui/Badge';
@@ -31,20 +31,6 @@ export function ForkliftCard({
             <User size={14} /> Operator
           </dt>
           <dd className="font-medium text-slate-800">{machine.operator}</dd>
-        </div>
-        <div>
-          <dt className="mb-1 flex items-center justify-between text-slate-500">
-            <span className="flex items-center gap-2">
-              <Battery size={14} /> Battery
-            </span>
-            <span className="font-semibold text-slate-800">{machine.battery}%</span>
-          </dt>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className={`h-full rounded-full ${machine.battery < 25 ? 'bg-rose-500' : 'bg-emerald-500'}`}
-              style={{ width: `${machine.battery}%` }}
-            />
-          </div>
         </div>
         <div className="flex items-center justify-between">
           <dt className="flex items-center gap-2 text-slate-500">
