@@ -1,24 +1,18 @@
 import { Bell } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useWarehouse } from '../../context/WarehouseContext';
+import { formatMachineId } from '../../utils/validation';
 
 export function NotificationBell() {
   const warehouse = useWarehouse();
   const [open, setOpen] = useState(false);
 
   const items = useMemo(() => {
-    const lowBattery = warehouse.forklifts
-      .filter((machine) => machine.battery < 25)
-      .map((machine) => ({
-        id: `batt-${machine.id}`,
-        title: `${machine.name} battery low`,
-        detail: `${machine.battery}% remaining`,
-      }));
     const unassigned = warehouse.forklifts
       .filter((machine) => !machine.operator || machine.operator === 'Unassigned')
       .map((machine) => ({
         id: `op-${machine.id}`,
-        title: `${machine.name} has no operator`,
+        title: `${formatMachineId(machine.id)} has no operator`,
         detail: 'Assign an operator from the Forklifts page',
       }));
     const scans =
@@ -36,7 +30,7 @@ export function NotificationBell() {
       title: event.message,
       detail: event.time,
     }));
-    return [...lowBattery, ...unassigned, ...scans, ...events].slice(0, 8);
+    return [...unassigned, ...scans, ...events].slice(0, 8);
   }, [warehouse.events, warehouse.forklifts, warehouse.scanStats.unmatchedToday]);
 
   return (
@@ -56,7 +50,7 @@ export function NotificationBell() {
       {open ? (
         <>
           <button type="button" className="fixed inset-0 z-30" aria-label="Close notifications" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-40 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+          <div className="absolute right-0 z-40 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
             <p className="px-1 text-sm font-semibold text-slate-900">Notifications</p>
             <p className="mb-2 px-1 text-xs text-slate-500">Alerts from warehouse activity in MongoDB</p>
             {items.length === 0 ? (

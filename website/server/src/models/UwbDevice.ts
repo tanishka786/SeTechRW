@@ -7,6 +7,7 @@ const uwbDeviceSchema = new mongoose.Schema(
     role: { type: String, enum: ['tag', 'primary', 'secondary'], required: true },
     chipModel: { type: String, default: 'DWM3001C' },
     chipId: { type: String, required: true, unique: true },
+    macAddress: { type: String, default: '' },
     forkliftId: { type: String, default: null },
     binId: { type: String, default: null },
     relayIds: { type: [String], default: [] },

@@ -3,11 +3,14 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { CameraScanner } from '../components/scanner/CameraScanner';
 import { ManualCodeForm } from '../components/scanner/ManualCodeForm';
 import { RecentScansTable } from '../components/scanner/RecentScansTable';
+import { ScanJourney, type ScanJourneyState } from '../components/scanner/ScanJourney';
 import { ScanResultCard } from '../components/scanner/ScanResultCard';
 import { ErrorState } from '../components/ui/LoadingState';
 import { useToast } from '../context/ToastContext';
 import { ApiError } from '../api/client';
 import { listScansRequest, lookupCodeRequest, type LookupResult, type ScanRow } from '../api/scanner';
+import { useWarehouse } from '../context/WarehouseContext';
+import { requiredWeightKg } from '../utils/bins';
 
 function beep() {
   try {
@@ -28,6 +31,7 @@ function beep() {
 
 export function Scanner() {
   const { pushToast } = useToast();
+  const warehouse = useWarehouse();
   const [result, setResult] = useState<LookupResult | null>(null);
   const [lastCode, setLastCode] = useState('');
   const [lastType, setLastType] = useState<ScanRow['codeType']>('Manual');
@@ -36,6 +40,7 @@ export function Scanner() {
   const [status, setStatus] = useState('all');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [journey, setJourney] = useState<ScanJourneyState | null>(null);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -65,10 +70,17 @@ export function Scanner() {
       if (data.found) {
         beep();
         pushToast('success', `Matched ${data.matchedItem || trimmed}`);
+        setJourney({
+          scanId: data.scan?.id,
+          itemName: data.matchedItem || data.catalog?.productName || trimmed,
+          requiredKg: requiredWeightKg(data.catalog?.quantity ?? data.product?.quantity),
+          productId: data.product?.id ?? null,
+        });
       } else {
         pushToast('error', data.error ?? 'No matching record found for this barcode / QR code.');
       }
-      await loadHistory();
+      if (data.scanStats) warehouse.applyScanStats(data.scanStats);
+      await Promise.all([loadHistory(), warehouse.refresh()]);
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Unable to reach the warehouse database. Please try again.';
       setError(message);
@@ -94,11 +106,8 @@ export function Scanner() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900">Barcode & QR Scanner</h2>
-        <p className="text-sm text-slate-500">Scan a code to look up warehouse records</p>
-      </div>
       {error ? <ErrorState title="Database unavailable" message={error} /> : null}
+      {journey ? <ScanJourney journey={journey} onEnded={() => setJourney(null)} /> : null}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <div className="space-y-4">
           <CameraScanner busy={busy} onScan={(code, type) => void lookup(code, type)} />

@@ -109,7 +109,7 @@ export function CameraScanner({
         <h3 className="text-sm font-semibold text-slate-900">Live scanner</h3>
         <span className="text-xs text-slate-500">{running ? 'Camera on' : 'Camera off'}</span>
       </div>
-      <div id="forklift-scanner" className="overflow-hidden rounded-xl bg-slate-950 min-h-56" />
+      <div id="forklift-scanner" className="min-h-48 overflow-hidden rounded-xl bg-slate-950 sm:min-h-56" />
       {cameras.length > 1 ? (
         <div className="mt-3">
           <Select

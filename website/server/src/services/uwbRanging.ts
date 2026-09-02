@@ -1,14 +1,30 @@
 import { Bin } from '../models/Bin';
 import { Forklift } from '../models/Forklift';
+import { Settings } from '../models/Settings';
 import { UwbDevice } from '../models/UwbDevice';
+import { UwbDistance } from '../models/UwbDistance';
 import { UwbRange } from '../models/UwbRange';
 
 const CHIP = 'Qorvo DWM3001C';
 const CHIP_STALE_MS = 15_000;
 const FLOOR = { minX: 1, maxX: 31, minY: 1, maxY: 27 };
 
+export const TEST_FORKLIFT_ID = 'FLT-001';
+export const TEST_BIN_ID = 'BIN-001';
+export const TEST_SECONDARY_ID = 'ANC-S-A';
+
+const TEST_MAC = {
+  tag: '00:00',
+  primary: '00:01',
+  secondary: '00:02',
+} as const;
+
 export function pairKey(a: string, b: string) {
   return a < b ? `${a}::${b}` : `${b}::${a}`;
+}
+
+export function mappingKey(tagId: string, primaryId: string) {
+  return `${tagId}::${primaryId}`;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -29,6 +45,7 @@ function publicDevice(doc: {
   role: 'tag' | 'primary' | 'secondary';
   chipModel: string;
   chipId: string;
+  macAddress?: string;
   forkliftId?: string | null;
   binId?: string | null;
   relayIds?: string[];
@@ -43,6 +60,7 @@ function publicDevice(doc: {
     role: doc.role,
     chipModel: doc.chipModel,
     chipId: doc.chipId,
+    macAddress: String(doc.macAddress ?? ''),
     forkliftId: doc.forkliftId ?? null,
     binId: doc.binId ?? null,
     relayIds: doc.relayIds ?? [],
@@ -106,6 +124,7 @@ export async function ensureUwbTopology(force = false) {
         role: 'secondary',
         chipModel: 'DWM3001C',
         chipId: secondary.chipId,
+        macAddress: secondary.id === TEST_SECONDARY_ID ? TEST_MAC.secondary : '',
         forkliftId: null,
         binId: null,
         relayIds: [],
@@ -133,6 +152,7 @@ export async function ensureUwbTopology(force = false) {
         role: 'primary',
         chipModel: 'DWM3001C',
         chipId: `QORVO-DWM3001C-P${String(index + 1).padStart(2, '0')}`,
+        macAddress: bin.id === TEST_BIN_ID ? TEST_MAC.primary : '',
         forkliftId: null,
         binId: bin.id,
         relayIds: layout.relayIds,
@@ -158,6 +178,7 @@ export async function ensureUwbTopology(force = false) {
       existing.name = `Tag ${machine.name}`;
       existing.location = machine.location;
       existing.online = machine.status !== 'Offline';
+      if (machine.id === TEST_FORKLIFT_ID) existing.set('macAddress', TEST_MAC.tag);
       await existing.save();
       continue;
     }
@@ -167,6 +188,7 @@ export async function ensureUwbTopology(force = false) {
       role: 'tag',
       chipModel: 'DWM3001C',
       chipId: `QORVO-DWM3001C-T${String(index + 1).padStart(2, '0')}`,
+      macAddress: machine.id === TEST_FORKLIFT_ID ? TEST_MAC.tag : '',
       forkliftId: machine.id,
       binId: null,
       relayIds: [],
@@ -268,8 +290,50 @@ export async function tickDummyUwb() {
 }
 
 export async function ingestChipRange(fromId: string, toId: string, distanceMm: number) {
+  return ingestLiveRange({ fromId, toId, distanceMm });
+}
+
+function cmToMm(cm: number) {
+  return Math.round(cm * 10);
+}
+
+export async function resolveTestDevice(role: string) {
+  await ensureUwbTopology();
+  if (role === 'tag') return UwbDevice.findOne({ role: 'tag', forkliftId: TEST_FORKLIFT_ID });
+  if (role === 'primary') return UwbDevice.findOne({ role: 'primary', binId: TEST_BIN_ID });
+  if (role === 'secondary') return UwbDevice.findOne({ id: TEST_SECONDARY_ID, role: 'secondary' });
+  return null;
+}
+
+export async function ingestLiveRange(input: {
+  fromId?: string;
+  toId?: string;
+  fromRole?: string;
+  toRole?: string;
+  distanceM?: number;
+  distanceCm?: number;
+  distanceMm?: number;
+}) {
+  let fromId = String(input.fromId ?? '').trim();
+  let toId = String(input.toId ?? '').trim();
+  if ((!fromId || !toId) && input.fromRole && input.toRole) {
+    const [from, to] = await Promise.all([resolveTestDevice(input.fromRole), resolveTestDevice(input.toRole)]);
+    fromId = from?.id ?? '';
+    toId = to?.id ?? '';
+  }
+  let distanceMm = Number(input.distanceMm);
+  if (!Number.isFinite(distanceMm) || distanceMm <= 0) {
+    if (Number.isFinite(Number(input.distanceM)) && Number(input.distanceM) > 0) {
+      distanceMm = metersToMm(Number(input.distanceM));
+    } else if (Number.isFinite(Number(input.distanceCm)) && Number(input.distanceCm) > 0) {
+      distanceMm = cmToMm(Number(input.distanceCm));
+    }
+  }
   if (!fromId || !toId || !Number.isFinite(distanceMm) || distanceMm <= 0) {
-    throw new Error('fromId, toId, and a positive distanceMm are required');
+    throw new Error('from/to roles or ids, and a positive distance, are required');
+  }
+  if (distanceMm >= 655350) {
+    throw new Error('Invalid UWB distance (timeout)');
   }
   const doc = await UwbRange.findOneAndUpdate(
     { pairKey: pairKey(fromId, toId) },
@@ -284,20 +348,100 @@ export async function ingestChipRange(fromId: string, toId: string, distanceMm: 
     },
     { upsert: true, new: true },
   );
-  return doc;
+  await UwbDevice.updateMany({ id: { $in: [fromId, toId] } }, { online: true });
+  return {
+    pairKey: doc.pairKey,
+    fromId: doc.fromId,
+    toId: doc.toId,
+    distanceM: mmToMeters(doc.distanceMm),
+    distanceMm: doc.distanceMm,
+    source: doc.source,
+    measuredAt: doc.measuredAt,
+  };
+}
+
+export async function getUwbTestCase() {
+  const settings = await Settings.findOne({ key: 'warehouse' });
+  return settings?.uwbTestCase === 'A' ? 'A' : 'C';
+}
+
+export async function setUwbTestCase(testCase: string) {
+  const next = testCase === 'A' ? 'A' : 'C';
+  await Settings.findOneAndUpdate(
+    { key: 'warehouse' },
+    { uwbTestCase: next, lastUpdated: new Date().toISOString() },
+    { upsert: true },
+  );
+  return getUwbMapping();
+}
+
+async function seedStaticRanges() {
+  await ensureUwbTopology();
+  if ((await UwbRange.countDocuments()) > 0) return;
+  const devices = await UwbDevice.find();
+  const byId = new Map(devices.map((d) => [d.id, d]));
+  const tags = devices.filter((d) => d.role === 'tag');
+  const primaries = devices.filter((d) => d.role === 'primary');
+  for (const [fromId, toId] of neededPairs(tags, primaries)) {
+    const from = byId.get(fromId);
+    const to = byId.get(toId);
+    if (!from || !to) continue;
+    await UwbRange.findOneAndUpdate(
+      { pairKey: pairKey(fromId, toId) },
+      {
+        pairKey: pairKey(fromId, toId),
+        fromId,
+        toId,
+        distanceMm: Math.max(50, metersToMm(euclidean(from, to))),
+        quality: 95,
+        source: 'dummy',
+        measuredAt: new Date(),
+      },
+      { upsert: true },
+    );
+  }
+}
+
+export async function setMappingDistance(tagId: string, primaryId: string, distanceM: number) {
+  const tag = String(tagId ?? '').trim();
+  const primary = String(primaryId ?? '').trim();
+  if (!tag || !primary) {
+    throw new Error('tagId and primaryId are required');
+  }
+  if (!Number.isFinite(distanceM) || distanceM < 0) {
+    throw new Error('Distance must be a number of 0 m or more');
+  }
+  const [tagDevice, primaryDevice] = await Promise.all([
+    UwbDevice.findOne({ id: tag, role: 'tag' }).lean(),
+    UwbDevice.findOne({ id: primary, role: 'primary' }).lean(),
+  ]);
+  if (!tagDevice || !primaryDevice) {
+    throw new Error('Unknown tag or primary anchor');
+  }
+  await UwbDistance.findOneAndUpdate(
+    { key: mappingKey(tag, primary) },
+    {
+      key: mappingKey(tag, primary),
+      tagId: tag,
+      primaryId: primary,
+      distanceM: Math.round(distanceM * 1000) / 1000,
+    },
+    { upsert: true },
+  );
+  return getUwbMapping();
 }
 
 export async function getUwbMapping() {
-  await ensureUwbTopology();
-  if ((await UwbRange.countDocuments()) === 0) {
-    await tickDummyUwb();
-  }
-  const [devices, ranges, forklifts, bins] = await Promise.all([
+  await seedStaticRanges();
+  const [devices, ranges, distances, forklifts, bins, testCase] = await Promise.all([
     UwbDevice.find().lean(),
     UwbRange.find().lean(),
+    UwbDistance.find().lean(),
     Forklift.find().lean(),
     Bin.find().lean(),
+    getUwbTestCase(),
   ]);
+  const overrideByKey = new Map(distances.map((row) => [row.key, row.distanceM]));
 
   const rangeByPair = new Map(ranges.map((r) => [r.pairKey, r]));
   const deviceById = new Map(devices.map((d) => [d.id, d]));
@@ -309,11 +453,18 @@ export async function getUwbMapping() {
     const machine = forklifts.find((f) => f.id === tag.forkliftId);
     for (const primary of primaries) {
       const bin = bins.find((b) => b.id === primary.binId);
-      const chain = [tag.id, ...(primary.relayIds ?? []), primary.id];
+      const relays =
+        primary.binId === TEST_BIN_ID
+          ? testCase === 'A'
+            ? [TEST_SECONDARY_ID]
+            : []
+          : (primary.relayIds ?? []);
+      const chain = [tag.id, ...relays, primary.id];
       const hops = [];
       let totalMm = 0;
       let missing = false;
       let latest = 0;
+      let liveChip = false;
 
       for (let i = 0; i < chain.length - 1; i++) {
         const fromId = chain[i];
@@ -327,6 +478,7 @@ export async function getUwbMapping() {
         }
         totalMm += sample.distanceMm;
         latest = Math.max(latest, new Date(sample.measuredAt).getTime());
+        if (sample.source === 'dwm3001c') liveChip = true;
         hops.push({
           fromId: from.id,
           fromName: from.name,
@@ -340,6 +492,9 @@ export async function getUwbMapping() {
         });
       }
 
+      const override = liveChip ? undefined : overrideByKey.get(mappingKey(tag.id, primary.id));
+      const computed = missing ? 0 : mmToMeters(totalMm);
+      const totalDistanceM = override !== undefined ? override : computed;
       mappings.push({
         forkliftId: tag.forkliftId ?? '',
         forkliftName: machine?.name ?? tag.name,
@@ -351,10 +506,10 @@ export async function getUwbMapping() {
         primaryId: primary.id,
         primaryName: primary.name,
         hops,
-        totalDistanceM: missing ? 0 : mmToMeters(totalMm),
+        totalDistanceM,
         hopCount: Math.max(0, chain.length - 2),
         isNearest: false,
-        status: missing ? 'no-signal' : 'ok',
+        status: override !== undefined || !missing ? 'ok' : 'no-signal',
         updatedAt: latest ? new Date(latest).toISOString() : new Date().toISOString(),
       });
     }
@@ -379,6 +534,7 @@ export async function getUwbMapping() {
   return {
     source: chipLive ? 'dwm3001c' : 'dummy',
     chip: CHIP,
+    testCase,
     updatedAt: new Date().toISOString(),
     devices: devices.map(publicDevice),
     mappings: mappings.sort((a, b) => {

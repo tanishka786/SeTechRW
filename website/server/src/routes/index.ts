@@ -4,7 +4,8 @@ import { authRouter } from './auth';
 import { warehouseRouter } from './warehouse';
 import { scanRouter } from './scans';
 import { uwbRouter } from './uwb';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, requireUwbIngest } from '../middleware/auth';
+import { ingestRange } from '../controllers/uwbController';
 
 export const apiRouter = Router();
 
@@ -16,6 +17,7 @@ apiRouter.get('/health', (_req, res) => {
 });
 
 apiRouter.use('/auth', authRouter);
+apiRouter.post('/uwb/ranges', requireUwbIngest, ingestRange);
 apiRouter.use(requireAuth, warehouseRouter);
 apiRouter.use(requireAuth, scanRouter);
 apiRouter.use(requireAuth, uwbRouter);

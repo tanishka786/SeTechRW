@@ -13,6 +13,14 @@ function leanId<T extends { id: string }>(docs: T[]) {
   return docs.map((d) => ({ ...d }));
 }
 
+export async function scanStatsNow() {
+  const [today, unmatchedToday] = await Promise.all([
+    ScanEvent.countDocuments({ status: 'Found' }),
+    ScanEvent.countDocuments({ status: 'Not Found' }),
+  ]);
+  return { today, unmatchedToday };
+}
+
 export async function warehouseState() {
   const [categories, products, bins, forklifts, users, userSessions, events, inventoryHistory, settings] =
     await Promise.all([
@@ -27,12 +35,7 @@ export async function warehouseState() {
       getSettings(),
     ]);
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const [scansToday, unmatchedToday] = await Promise.all([
-    ScanEvent.countDocuments({ createdAt: { $gte: start } }),
-    ScanEvent.countDocuments({ createdAt: { $gte: start }, status: 'Not Found' }),
-  ]);
+  const { today: scansToday, unmatchedToday } = await scanStatsNow();
 
   const totalQuantity = products.reduce((sum, p) => sum + p.quantity, 0);
   const utilization =
@@ -64,7 +67,7 @@ export async function warehouseState() {
       activeUsers: userSessions.filter((s) => s.status === 'Active').length,
       totalQuantity,
       utilization,
-      occupiedBins: bins.filter((b) => b.capacity >= 40).length,
+      occupiedBins: bins.filter((b) => b.capacity > 0).length,
       lowStock: products.filter((p) => p.status === 'Low Stock').length,
       reserved: products.filter((p) => p.status === 'Reserved').length,
       available: products.filter((p) => p.status === 'In Stock').length,

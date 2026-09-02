@@ -44,6 +44,7 @@ export interface LookupResult {
   matchedItem?: string;
   location?: string;
   scan?: { id: string; createdAt: string };
+  scanStats?: { today: number; unmatchedToday: number };
 }
 
 export interface ScanRow {
@@ -67,6 +68,16 @@ export function lookupCodeRequest(code: string, codeType: ScanRow['codeType']) {
 
 export function listScansRequest(query: string, status: string) {
   return api<ScanRow[]>(apiQuery('/api/scans', { q: query, status: status === 'all' ? undefined : status }));
+}
+
+export function placeScanRequest(payload: { scanId?: string; binId: string; weightKg: number; productId?: string | null }) {
+  return api<{ bin: { id: string; name: string; location: string; status: string; capacity: number; freeKg: number } }>(
+    '/api/scans/place',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export function importExcelRequest(file: File) {

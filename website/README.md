@@ -30,14 +30,13 @@ The Vite dev server proxies `/api` to `http://localhost:5000`.
 
 ## Scanner lookup keys
 
-Imported from `PrintQueue_20260901_132810.xlsx` sheet **Print queue**:
+Imported from `Birla_Carbon_Demo_Queue.xlsx`:
 
+- Barcode (example `226587`)
 - Queue Id
-- Product ref (example `226587`)
-- Product code
-- QR value URL
+- QR value URL (example `http://127.0.0.1:5000/scan/226587`)
 
-Try looking up `226587` on `/scanner`.
+Paste the barcode or the QR URL on `/scanner` to see product name, weight, and description.
 
 ## Excel import
 

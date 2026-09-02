@@ -43,6 +43,12 @@ export function RecentScansTable({
         empty={<EmptyState icon={<Search />} title="No scans yet" description="Scan a label or enter a product ref from the Excel file." />}
         columns={[
           {
+            key: 'serial',
+            header: 'Serial No.',
+            className: 'w-24',
+            render: (_row, index) => index + 1,
+          },
+          {
             key: 'time',
             header: 'Time',
             render: (row) => new Date(row.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),

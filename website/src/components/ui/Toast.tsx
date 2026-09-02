@@ -11,7 +11,7 @@ export function ToastViewport() {
   const { toasts, dismissToast } = useToast();
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[80] flex w-[min(100%-2rem,360px)] flex-col gap-2">
+    <div className="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[80] flex flex-col gap-2 sm:inset-x-auto sm:right-4 sm:w-[min(100%-2rem,360px)]">
       {toasts.map((toast) => {
         const Icon = icons[toast.type];
         return (

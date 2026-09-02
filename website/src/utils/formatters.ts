@@ -43,9 +43,9 @@ export function deriveProductStatus(quantity: number, current?: string): 'In Sto
   return 'In Stock';
 }
 
-export function deriveBinStatus(capacity: number, current?: string): 'Available' | 'Occupied' | 'Full' | 'Maintenance' {
+export function deriveBinStatus(usedKg: number, current?: string): 'Available' | 'Occupied' | 'Full' | 'Maintenance' {
   if (current === 'Maintenance') return 'Maintenance';
-  if (capacity >= 95) return 'Full';
-  if (capacity >= 40) return 'Occupied';
+  if (usedKg >= 100) return 'Full';
+  if (usedKg > 0) return 'Occupied';
   return 'Available';
 }

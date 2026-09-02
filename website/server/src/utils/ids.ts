@@ -9,6 +9,8 @@ export function nextId(prefix: string, existing: string[]) {
   return `${prefix}-${String(next).padStart(3, '0')}`;
 }
 
+export const BIN_MAX_KG = 100;
+
 export function deriveProductStatus(quantity: number, current?: string) {
   if (current === 'Reserved' && quantity > 0) return 'Reserved';
   if (quantity <= 0) return 'Out of Stock';
@@ -16,10 +18,10 @@ export function deriveProductStatus(quantity: number, current?: string) {
   return 'In Stock';
 }
 
-export function deriveBinStatus(capacity: number, current?: string) {
+export function deriveBinStatus(usedKg: number, current?: string) {
   if (current === 'Maintenance') return 'Maintenance';
-  if (capacity >= 95) return 'Full';
-  if (capacity >= 40) return 'Occupied';
+  if (usedKg >= BIN_MAX_KG) return 'Full';
+  if (usedKg > 0) return 'Occupied';
   return 'Available';
 }
 

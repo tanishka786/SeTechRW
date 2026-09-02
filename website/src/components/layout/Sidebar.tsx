@@ -1,11 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
-  Boxes,
   Forklift,
   LayoutDashboard,
   LogOut,
-  Package,
   Radio,
   ScanLine,
   Settings,
@@ -16,16 +14,13 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
 import { Button } from '../ui/Button';
-import { BrandMark, BrandWordmark } from './BrandMark';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/products', label: 'Products', icon: Package },
   { to: '/bins', label: 'Bins', icon: Warehouse },
   { to: '/forklifts', label: 'Forklifts', icon: Forklift },
   { to: '/uwb', label: 'UWB Mapping', icon: Radio },
   { to: '/users', label: 'Users', icon: Users },
-  { to: '/inventory', label: 'Inventory', icon: Boxes },
   { to: '/scanner', label: 'Barcode / QR', icon: ScanLine },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
 ];
@@ -52,19 +47,23 @@ export function Sidebar({
       ) : null}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/5 bg-black text-slate-200 transition-transform duration-200 lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex h-dvh w-[min(18rem,calc(100vw-2.5rem))] flex-col overflow-y-auto border-r border-white/5 bg-black text-slate-200 transition-transform duration-200 lg:static lg:h-auto lg:min-h-dvh lg:w-72 lg:translate-x-0',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between px-5 py-5">
-          <div className="flex items-center gap-3">
-            <BrandMark size={40} />
-            <BrandWordmark inverted />
+        <div className="flex items-center justify-between gap-3 px-5 py-5">
+          <div className="min-w-0">
+            <img
+              src="/aditya-birla-logo-retina.png"
+              alt="Aditya Birla Group"
+              className="h-9 w-auto max-w-[11rem] rounded-md bg-white object-contain p-1"
+            />
+            <p className="mt-2 text-sm font-semibold tracking-tight text-white">Birla Carbon</p>
           </div>
           <Button variant="ghost" size="sm" className="text-slate-300 lg:hidden" aria-label="Close sidebar" onClick={onClose} icon={<X size={16} />} />
         </div>
 
-        <nav className="flex-1 space-y-1 px-3">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-3">
           {links.map((link) => {
             const Icon = link.icon;
             const active = location.pathname === link.to;
@@ -85,7 +84,7 @@ export function Sidebar({
           })}
         </nav>
 
-        <div className="space-y-1 border-t border-white/10 p-3">
+        <div className="space-y-1 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <NavLink
             to="/settings"
             onClick={onClose}

@@ -11,4 +11,5 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET ?? 'forklift-dev-secret-change-me',
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
   devOtp: process.env.DEV_OTP ?? '123456',
+  uwbIngestKey: process.env.UWB_INGEST_KEY ?? 'forklift-uwb-test',
 };

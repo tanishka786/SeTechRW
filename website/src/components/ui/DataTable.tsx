@@ -4,7 +4,7 @@ import { cn } from '../../utils/cn';
 interface Column<T> {
   key: string;
   header: string;
-  render?: (row: T) => ReactNode;
+  render?: (row: T, index: number) => ReactNode;
   className?: string;
 }
 
@@ -17,7 +17,7 @@ interface DataTableProps<T> {
 
 export function DataTable<T>({ columns, rows, rowKey, empty }: DataTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <div className="max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -30,11 +30,11 @@ export function DataTable<T>({ columns, rows, rowKey, empty }: DataTableProps<T>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <tr key={rowKey(row)} className="border-t border-slate-100 hover:bg-brand-yellow/15">
                 {columns.map((col) => (
                   <td key={col.key} className={cn('whitespace-nowrap px-4 py-3 text-slate-700', col.className)}>
-                    {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] ?? '')}
+                    {col.render ? col.render(row, index) : String((row as Record<string, unknown>)[col.key] ?? '')}
                   </td>
                 ))}
               </tr>

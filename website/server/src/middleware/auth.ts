@@ -40,6 +40,15 @@ export async function requireAuth(req: AuthedRequest, res: Response, next: NextF
   }
 }
 
+export async function requireUwbIngest(req: AuthedRequest, res: Response, next: NextFunction) {
+  const key = String(req.headers['x-uwb-key'] ?? req.body?.ingestKey ?? '').trim();
+  if (env.uwbIngestKey && key && key === env.uwbIngestKey) {
+    next();
+    return;
+  }
+  await requireAuth(req, res, next);
+}
+
 export function publicUser(user: { id: string; name: string; email: string; mobile: string; role: string; createdAt?: Date }) {
   return {
     id: user.id,

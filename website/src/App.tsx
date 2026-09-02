@@ -9,13 +9,10 @@ import { Analytics } from './pages/Analytics';
 import { Bins } from './pages/Bins';
 import { Dashboard } from './pages/Dashboard';
 import { Forklifts } from './pages/Forklifts';
-import { Inventory } from './pages/Inventory';
 import { Login } from './pages/Login';
 import { OTP } from './pages/OTP';
-import { Products } from './pages/Products';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
-import { Signup } from './pages/Signup';
 import { UsersPage } from './pages/Users';
 import { UwbMappingPage } from './pages/UwbMapping';
 
@@ -35,18 +32,18 @@ export default function App() {
         <Routes>
           <Route element={<PublicOnlyRoute />}>
             <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/signup" element={<Navigate to="/login" replace />} />
             <Route path="/otp" element={<OTP />} />
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
+              <Route path="/products" element={<Navigate to="/" replace />} />
               <Route path="/bins" element={<Bins />} />
               <Route path="/forklifts" element={<Forklifts />} />
               <Route path="/uwb" element={<UwbMappingPage />} />
               <Route path="/users" element={<UsersPage />} />
-              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/inventory" element={<Navigate to="/" replace />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />

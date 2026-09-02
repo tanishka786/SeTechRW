@@ -12,15 +12,13 @@ import { Select } from '../components/ui/Select';
 import { useWarehouse } from '../context/WarehouseContext';
 import type { Forklift as ForkliftType, ForkliftStatus } from '../types';
 import { relativeUpdated } from '../utils/formatters';
-import { nextForkliftId } from '../utils/validation';
+import { nextForkliftId, matchesSearch, formatMachineId, toStorageForkliftId } from '../utils/validation';
 
 const statuses: Array<ForkliftStatus | 'All'> = ['All', 'Active', 'Idle', 'Maintenance', 'Offline'];
 const editStatuses: ForkliftStatus[] = ['Active', 'Idle', 'Maintenance', 'Offline'];
 
 const emptyForm = {
   id: '',
-  name: '',
-  model: '',
   capacity: '',
   operator: 'Unassigned',
   status: 'Idle' as ForkliftStatus,
@@ -59,7 +57,10 @@ export function Forklifts() {
   const filtered = useMemo(
     () =>
       warehouse.forklifts.filter((f) => {
-        const matchesQuery = `${f.name} ${f.id} ${f.operator} ${f.location}`.toLowerCase().includes(query.toLowerCase());
+        const matchesQuery = matchesSearch(
+          `${formatMachineId(f.id)} ${f.id} ${f.name} ${f.operator} ${f.location}`,
+          query,
+        );
         return matchesQuery && (status === 'All' || f.status === status);
       }),
     [query, status, warehouse.forklifts],
@@ -79,8 +80,8 @@ export function Forklifts() {
   const save = async () => {
     const payload = {
       id: form.id,
-      name: form.name,
-      model: form.model,
+      name: formatMachineId(form.id),
+      model: editing?.model || 'Unspecified',
       capacity: form.capacity,
       operator: form.operator.trim() || 'Unassigned',
       status: form.status,
@@ -95,13 +96,7 @@ export function Forklifts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Forklifts</h2>
-          <p className="text-sm text-slate-500">
-            Machine records are stored in MongoDB. Assign an operator when you edit a machine.
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={openCreate} icon={<Plus size={16} />}>
           Add Machine
         </Button>
@@ -120,7 +115,7 @@ export function Forklifts() {
       {filtered.length === 0 ? (
         <EmptyState icon={<Forklift />} title="No machines found" description="Add a forklift to start tracking fleet activity." />
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((machine) => (
             <ForkliftCard
               key={machine.id}
@@ -130,8 +125,6 @@ export function Forklifts() {
                 setEditing(machine);
                 setForm({
                   id: machine.id,
-                  name: machine.name,
-                  model: machine.model,
                   capacity: machine.capacity,
                   operator: machine.operator || 'Unassigned',
                   status: machine.status,
@@ -151,8 +144,11 @@ export function Forklifts() {
         rowKey={(row) => row.id}
         empty={null}
         columns={[
-          { key: 'name', header: 'Machine name' },
-          { key: 'id', header: 'Machine ID' },
+          {
+            key: 'id',
+            header: 'Machine ID',
+            render: (row) => formatMachineId(row.id),
+          },
           {
             key: 'status',
             header: 'Status',
@@ -177,9 +173,12 @@ export function Forklifts() {
           </>
         }
       >
-        <Input label="Machine Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <Input label="Machine ID" value={form.id} onChange={(e) => setForm({ ...form, id: e.target.value })} disabled={Boolean(editing)} />
-        <Input label="Model" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+        <Input
+          label="Machine ID"
+          value={formatMachineId(form.id)}
+          onChange={(e) => setForm({ ...form, id: toStorageForkliftId(e.target.value) })}
+          disabled={Boolean(editing)}
+        />
         <Input label="Capacity" value={form.capacity} placeholder="2.5 Ton" onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
         <Select
           label="Operator"

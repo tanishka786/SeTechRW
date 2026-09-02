@@ -17,7 +17,12 @@ import { ExcelCatalog } from '../models/ExcelCatalog';
 import { ensureUwbTopology } from '../services/uwbRanging';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const excelPath = path.resolve(here, '../../data/PrintQueue_20260901_132810.xlsx');
+const excelCandidates = [
+  path.resolve(here, '../../../Birla_Carbon_Demo_Queue.xlsx'),
+  path.resolve(here, '../../data/Birla_Carbon_Demo_Queue.xlsx'),
+  path.resolve(here, '../../data/PrintQueue_20260901_132810.xlsx'),
+];
+const excelPath = excelCandidates.find((file) => fs.existsSync(file)) ?? excelCandidates[0];
 
 function hoursAgo(hours: number, minutes = 0) {
   const d = new Date();
@@ -48,11 +53,11 @@ async function seedWarehouse() {
 
   if ((await Bin.countDocuments()) === 0) {
     await Bin.insertMany([
-      { id: 'BIN-001', name: 'Bin 1', capacity: 75, location: 'Aisle A · Zone 1', status: 'Occupied', productCount: 2 },
-      { id: 'BIN-002', name: 'Bin 2', capacity: 70, location: 'Aisle A · Zone 2', status: 'Occupied', productCount: 2 },
-      { id: 'BIN-003', name: 'Bin 3', capacity: 85, location: 'Aisle B · Zone 1', status: 'Occupied', productCount: 2 },
+      { id: 'BIN-001', name: 'Bin 1', capacity: 100, location: 'Aisle A · Zone 1', status: 'Full', productCount: 2 },
+      { id: 'BIN-002', name: 'Bin 2', capacity: 100, location: 'Aisle A · Zone 2', status: 'Full', productCount: 2 },
+      { id: 'BIN-003', name: 'Bin 3', capacity: 100, location: 'Aisle B · Zone 1', status: 'Full', productCount: 2 },
       { id: 'BIN-004', name: 'Bin 4', capacity: 50, location: 'Aisle B · Zone 2', status: 'Occupied', productCount: 2 },
-      { id: 'BIN-005', name: 'Bin 5', capacity: 30, location: 'Aisle C · Receiving', status: 'Available', productCount: 2 },
+      { id: 'BIN-005', name: 'Bin 5', capacity: 30, location: 'Aisle C · Receiving', status: 'Occupied', productCount: 2 },
     ]);
   }
 
@@ -142,7 +147,7 @@ async function seedAdmin() {
 
 async function seedExcelProducts() {
   const bins = ['BIN-001', 'BIN-002', 'BIN-003', 'BIN-004', 'BIN-005'];
-  const rows = await ExcelCatalog.find({ sourceSheet: 'Print queue' });
+  const rows = await ExcelCatalog.find();
   for (const [index, row] of rows.entries()) {
     const id = `P-${row.productRef}`;
     if (await Product.exists({ id })) continue;

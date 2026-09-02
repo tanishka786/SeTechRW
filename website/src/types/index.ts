@@ -145,6 +145,7 @@ export interface UwbDevice {
   role: UwbRole;
   chipModel: string;
   chipId: string;
+  macAddress?: string;
   forkliftId: string | null;
   binId: string | null;
   relayIds: string[];
@@ -187,6 +188,7 @@ export interface UwbMapping {
 export interface UwbMappingResponse {
   source: UwbRangeSource;
   chip: string;
+  testCase?: 'A' | 'C';
   updatedAt: string;
   devices: UwbDevice[];
   mappings: UwbMapping[];

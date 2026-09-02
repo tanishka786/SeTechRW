@@ -27,7 +27,8 @@ interface WarehouseContextValue extends WarehouseState {
   loading: boolean;
   error: string | null;
   scanStats: { today: number; unmatchedToday: number };
-  refresh: () => Promise<void>;
+  applyScanStats: (stats: { today: number; unmatchedToday: number }) => void;
+  refresh: () => Promise<boolean>;
   addCategory: (name: string, description: string) => Promise<string | null>;
   updateCategory: (id: string, name: string, description: string) => Promise<string | null>;
   deleteCategory: (id: string) => Promise<string | null>;
@@ -75,10 +76,12 @@ export function WarehouseProvider({ children }: { children: ReactNode }) {
       const data = await fetchWarehouse();
       const next = applyState(data);
       setState(next);
-      setScanStats(next.scanStats);
+      setScanStats(next.scanStats ?? { today: 0, unmatchedToday: 0 });
       setError(null);
+      return true;
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to reach the warehouse database. Please try again.');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -95,7 +98,7 @@ export function WarehouseProvider({ children }: { children: ReactNode }) {
         .then((data) => {
           const next = applyState(data);
           setState(next);
-          setScanStats(next.scanStats);
+          if (next.scanStats) setScanStats(next.scanStats);
           setError(null);
         })
         .catch(() => {
@@ -292,6 +295,13 @@ export function WarehouseProvider({ children }: { children: ReactNode }) {
     [pushToast, refresh],
   );
 
+  const applyScanStats = useCallback((stats: { today: number; unmatchedToday: number }) => {
+    setScanStats({
+      today: Number(stats.today) || 0,
+      unmatchedToday: Number(stats.unmatchedToday) || 0,
+    });
+  }, []);
+
   const setLivePaused = useCallback(
     async (paused: boolean) => {
       await setLivePausedRequest(paused);
@@ -307,6 +317,7 @@ export function WarehouseProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       scanStats,
+      applyScanStats,
       refresh,
       addCategory,
       updateCategory,
@@ -328,6 +339,7 @@ export function WarehouseProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       scanStats,
+      applyScanStats,
       refresh,
       addCategory,
       updateCategory,
@@ -371,7 +383,7 @@ export function useWarehouseStats() {
     activeForklifts,
     activeUsers,
     utilization,
-    occupiedBins: warehouse.bins.filter((b) => b.capacity >= 40).length,
+    occupiedBins: warehouse.bins.filter((b) => b.capacity > 0).length,
     lowStock: warehouse.products.filter((p) => p.status === 'Low Stock').length,
     reserved: warehouse.products.filter((p) => p.status === 'Reserved').length,
     available: warehouse.products.filter((p) => p.status === 'In Stock').length,

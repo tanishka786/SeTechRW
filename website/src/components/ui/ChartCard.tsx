@@ -12,7 +12,7 @@ export function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-900/5 sm:p-5">
+    <section className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-900/5 sm:p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
@@ -20,7 +20,7 @@ export function ChartCard({
         </div>
         {action}
       </div>
-      <div className="h-56 w-full">{children}</div>
+      <div className="h-44 w-full min-w-0 sm:h-56">{children}</div>
     </section>
   );
 }

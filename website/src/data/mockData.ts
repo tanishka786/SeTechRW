@@ -55,11 +55,11 @@ export const seedProducts: Product[] = [
 ];
 
 export const seedBins: Bin[] = [
-  { id: 'BIN-001', name: 'Bin 1', capacity: 75, location: 'Aisle A · Zone 1', status: 'Occupied', productCount: 2 },
-  { id: 'BIN-002', name: 'Bin 2', capacity: 70, location: 'Aisle A · Zone 2', status: 'Occupied', productCount: 2 },
-  { id: 'BIN-003', name: 'Bin 3', capacity: 85, location: 'Aisle B · Zone 1', status: 'Occupied', productCount: 2 },
+  { id: 'BIN-001', name: 'Bin 1', capacity: 100, location: 'Aisle A · Zone 1', status: 'Full', productCount: 2 },
+  { id: 'BIN-002', name: 'Bin 2', capacity: 100, location: 'Aisle A · Zone 2', status: 'Full', productCount: 2 },
+  { id: 'BIN-003', name: 'Bin 3', capacity: 100, location: 'Aisle B · Zone 1', status: 'Full', productCount: 2 },
   { id: 'BIN-004', name: 'Bin 4', capacity: 50, location: 'Aisle B · Zone 2', status: 'Occupied', productCount: 2 },
-  { id: 'BIN-005', name: 'Bin 5', capacity: 30, location: 'Aisle C · Receiving', status: 'Available', productCount: 2 },
+  { id: 'BIN-005', name: 'Bin 5', capacity: 30, location: 'Aisle C · Receiving', status: 'Occupied', productCount: 2 },
 ];
 
 export const seedForklifts: Forklift[] = [

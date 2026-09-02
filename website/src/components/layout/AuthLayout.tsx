@@ -12,13 +12,13 @@ export function AuthLayout({
   footer?: ReactNode;
 }) {
   return (
-    <div className="auth-grid min-h-screen px-4 py-10">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-md flex-col justify-center">
+    <div className="auth-grid min-h-dvh px-4 py-8 sm:py-10">
+      <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-md flex-col justify-center">
         <div className="mb-6 flex flex-col items-start gap-3 text-white">
           <img
-            src="/birla-carbon-logo.png"
-            alt="Aditya Birla Birla Carbon"
-            className="h-24 w-auto rounded-xl bg-white object-contain p-2 shadow-lg"
+            src="/aditya-birla-logo-retina.png"
+            alt="Aditya Birla Group"
+            className="h-14 w-auto rounded-xl bg-white object-contain p-2 shadow-lg sm:h-20"
           />
           <p className="text-[11px] uppercase tracking-[0.18em] text-brand-yellow">Warehouse Intelligence</p>
         </div>

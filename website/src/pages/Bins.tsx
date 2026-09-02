@@ -11,7 +11,8 @@ import { Select } from '../components/ui/Select';
 import { useWarehouse } from '../context/WarehouseContext';
 import { useToast } from '../context/ToastContext';
 import type { Bin, BinStatus } from '../types';
-import { nextBinId } from '../utils/validation';
+import { nextBinId, formatBinId, toStorageBinId, matchesSearch } from '../utils/validation';
+import { BIN_MAX_KG } from '../utils/bins';
 
 const statuses: Array<BinStatus | 'All'> = ['All', 'Available', 'Occupied', 'Full', 'Maintenance'];
 
@@ -23,13 +24,16 @@ export function Bins() {
   const [open, setOpen] = useState(false);
   const [details, setDetails] = useState<Bin | null>(null);
   const [editing, setEditing] = useState<Bin | null>(null);
-  const [form, setForm] = useState({ id: '', name: '', capacity: '10', location: '' });
+  const [form, setForm] = useState({ id: '', capacity: '0', location: '' });
   const [error, setError] = useState('');
 
   const filtered = useMemo(
     () =>
       warehouse.bins.filter((bin) => {
-        const matchesQuery = `${bin.name} ${bin.id} ${bin.location}`.toLowerCase().includes(query.toLowerCase());
+        const matchesQuery = matchesSearch(
+          `${formatBinId(bin.id)} ${bin.id} ${bin.name} ${bin.location}`,
+          query,
+        );
         const matchesStatus = status === 'All' || bin.status === status;
         return matchesQuery && matchesStatus;
       }),
@@ -38,35 +42,31 @@ export function Bins() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ id: nextBinId(warehouse.bins), name: '', capacity: '10', location: '' });
+    setForm({ id: nextBinId(warehouse.bins), capacity: '0', location: '' });
     setError('');
     setOpen(true);
   };
 
   const save = async () => {
-    const capacity = Number(form.capacity);
-    if (!Number.isFinite(capacity)) {
-      setError('Capacity must be a number');
+    const capacity = Math.min(BIN_MAX_KG, Math.max(0, Number(form.capacity)));
+    if (!Number.isFinite(Number(form.capacity))) {
+      setError('Stored weight must be a number of 0 to 100 kg');
       return;
     }
     const err = editing
       ? await warehouse.updateBin(editing.id, {
-          name: form.name,
+          name: formatBinId(editing.id),
           location: form.location,
           capacity,
         })
-      : await warehouse.addBin({ id: form.id, name: form.name, location: form.location, capacity });
+      : await warehouse.addBin({ id: form.id, name: formatBinId(form.id), location: form.location, capacity });
     setError(err ?? '');
     if (!err) setOpen(false);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900">Bins</h2>
-          <p className="text-sm text-slate-500">Five storage zones with live capacity tracking</p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={openCreate} icon={<Plus size={16} />}>
           New Bin
         </Button>
@@ -93,7 +93,7 @@ export function Bins() {
               onView={() => setDetails(bin)}
               onEdit={() => {
                 setEditing(bin);
-                setForm({ id: bin.id, name: bin.name, capacity: String(bin.capacity), location: bin.location });
+                setForm({ id: bin.id, capacity: String(bin.capacity), location: bin.location });
                 setError('');
                 setOpen(true);
               }}
@@ -119,22 +119,28 @@ export function Bins() {
           </>
         }
       >
-        <Input label="Bin Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         <Input
           label="Bin ID"
-          value={form.id}
-          onChange={(e) => setForm({ ...form, id: e.target.value })}
+          value={formatBinId(form.id)}
+          onChange={(e) => setForm({ ...form, id: toStorageBinId(e.target.value) })}
           disabled={Boolean(editing)}
         />
-        <Input label="Capacity" type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+        <Input
+          label="Stored weight (kg)"
+          type="number"
+          min={0}
+          max={100}
+          value={form.capacity}
+          onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+          hint="Each bin holds up to 100 kg"
+        />
         <Input label="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
         {error ? <p className="text-sm text-rose-600">{error}</p> : null}
       </Modal>
 
       <Modal
         open={Boolean(details)}
-        title={details?.name ?? 'Bin details'}
-        description={details?.id}
+        title={details ? formatBinId(details.id) : 'Bin details'}
         onClose={() => setDetails(null)}
         footer={
           <Button variant="outline" onClick={() => setDetails(null)}>
@@ -149,25 +155,13 @@ export function Bins() {
               {details.location}
             </p>
             <p>
-              <span className="text-slate-500">Capacity: </span>
-              {details.capacity}%
+              <span className="text-slate-500">Stored: </span>
+              {details.capacity} / 100 kg
             </p>
             <p className="flex items-center gap-2">
               <span className="text-slate-500">Status:</span>
               <Badge variant={statusVariant(details.status)}>{details.status}</Badge>
             </p>
-            <div>
-              <p className="mb-2 font-medium text-slate-800">Products in this bin</p>
-              <ul className="space-y-1">
-                {warehouse.products
-                  .filter((p) => p.binId === details.id)
-                  .map((p) => (
-                    <li key={p.id} className="rounded-lg bg-slate-50 px-3 py-2">
-                      {p.id} · {p.name} · qty {p.quantity}
-                    </li>
-                  ))}
-              </ul>
-            </div>
           </div>
         ) : null}
       </Modal>

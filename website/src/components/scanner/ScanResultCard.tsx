@@ -14,7 +14,7 @@ export function ScanResultCard({
   if (!result) {
     return (
       <section className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-500">
-        Scan a QR or barcode to see catalog details from the print queue Excel file.
+        Scan a QR or barcode, or paste a URL from the Birla Carbon Excel file.
       </section>
     );
   }
@@ -25,9 +25,6 @@ export function ScanResultCard({
         <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">{codeType}</p>
         <h3 className="mt-1 break-all font-semibold text-slate-900">{code}</h3>
         <p className="mt-3 text-sm text-rose-700">{result.error ?? 'No matching record found for this barcode / QR code.'}</p>
-        <Link to={`/products?code=${encodeURIComponent(code)}`} className="mt-4 inline-flex h-10 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700">
-          Add as new product
-        </Link>
       </section>
     );
   }
@@ -36,16 +33,14 @@ export function ScanResultCard({
   const fields = catalog
     ? [
         ['Queue ID', catalog.queueId],
-        ['Product Ref', catalog.productRef],
-        ['Product Name', catalog.productName],
-        ['Product Code', catalog.productCode],
-        ['Product Type', catalog.productType || '—'],
-        ['Quantity', String(catalog.quantity)],
-        ['Price', String(catalog.price)],
-        ['USP', catalog.usp || '—'],
-        ['QR Value', catalog.qrValue],
-        ['Queued At (UTC)', catalog.queuedAtUtc],
-      ]
+        ['Barcode', catalog.productRef],
+        ['Product name', catalog.productName],
+        ['Product type', catalog.productType || '—'],
+        ['Weight', catalog.quantity ? `${catalog.quantity} kg` : '—'],
+        ['Description', catalog.usp || '—'],
+        ['QR / URL', catalog.qrValue],
+        ['Queued at (UTC)', catalog.queuedAtUtc],
+      ].filter(([, value]) => value && value !== '—')
     : [];
 
   return (
@@ -69,23 +64,13 @@ export function ScanResultCard({
         </dl>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {result.product ? (
-          <Link to="/products" className="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
-            View Product
-          </Link>
-        ) : null}
-        {result.bin ? (
+      {result.bin ? (
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link to="/bins" className="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
             View Bin
           </Link>
-        ) : null}
-        {result.product ? (
-          <Link to="/inventory" className="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
-            View Inventory
-          </Link>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }

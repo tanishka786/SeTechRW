@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { AuthLayout } from '../components/layout/AuthLayout';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -27,14 +26,6 @@ export function Login() {
     <AuthLayout
       title="Welcome Back"
       subtitle="Sign in to your Birla Carbon warehouse account"
-      footer={
-        <>
-          Don&apos;t have an account?{' '}
-          <Link to="/signup" className="font-semibold text-brand-maroon hover:text-brand-red">
-            Create Account
-          </Link>
-        </>
-      }
     >
       <div className="mb-5 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
         {(['email', 'mobile'] as LoginMethod[]).map((item) => (

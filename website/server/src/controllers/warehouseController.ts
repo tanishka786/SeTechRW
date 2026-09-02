@@ -148,7 +148,7 @@ export async function createBin(req: AuthedRequest, res: Response) {
     res.status(409).json({ error: 'This Bin ID already exists.' });
     return;
   }
-  const capacity = Math.min(100, Math.max(0, Number(req.body.capacity ?? 10)));
+  const capacity = Math.min(100, Math.max(0, Number(req.body.capacity ?? 0)));
   const doc = await Bin.create({
     id,
     name,
@@ -169,7 +169,9 @@ export async function updateBin(req: AuthedRequest, res: Response) {
   }
   if (req.body.name) bin.name = String(req.body.name).trim();
   if (req.body.location) bin.location = String(req.body.location).trim();
-  if (req.body.capacity !== undefined) bin.capacity = Number(req.body.capacity);
+  if (req.body.capacity !== undefined) {
+    bin.capacity = Math.min(100, Math.max(0, Number(req.body.capacity)));
+  }
   bin.status = req.body.status ?? deriveBinStatus(bin.capacity, bin.status);
   bin.updatedBy = actor(req);
   await bin.save();

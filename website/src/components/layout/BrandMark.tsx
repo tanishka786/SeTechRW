@@ -7,11 +7,11 @@ export function BrandMark({
 }) {
   return (
     <img
-      src="/favicon.svg"
-      alt="Birla Carbon"
+      src="/aditya-birla-logo-retina.png"
+      alt="Aditya Birla"
       width={size}
       height={size}
-      className={`rounded-lg ${className}`.trim()}
+      className={`rounded-lg bg-white object-contain p-0.5 ${className}`.trim()}
     />
   );
 }

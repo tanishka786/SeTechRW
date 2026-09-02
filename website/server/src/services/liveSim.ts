@@ -25,10 +25,10 @@ function deriveStatus(quantity: number, current?: string) {
   return 'In Stock';
 }
 
-function deriveBinStatus(capacity: number, current?: string) {
+function deriveBinStatus(usedKg: number, current?: string) {
   if (current === 'Maintenance') return 'Maintenance';
-  if (capacity >= 95) return 'Full';
-  if (capacity >= 40) return 'Occupied';
+  if (usedKg >= 100) return 'Full';
+  if (usedKg > 0) return 'Occupied';
   return 'Available';
 }
 

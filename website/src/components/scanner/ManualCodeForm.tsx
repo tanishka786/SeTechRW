@@ -22,13 +22,13 @@ export function ManualCodeForm({
   return (
     <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-semibold text-slate-900">Manual entry</h3>
-      <p className="mt-1 text-xs text-slate-500">Paste a QR URL, product ref, or queue ID from the Excel file.</p>
+      <p className="mt-1 text-xs text-slate-500">Paste a QR URL or barcode from Birla_Carbon_Demo_Queue.xlsx.</p>
       <div className="mt-3">
         <Input
           label="Code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="226587 or QR URL"
+          placeholder="226587 or http://127.0.0.1:5000/scan/226587"
         />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">

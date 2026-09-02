@@ -39,7 +39,7 @@ export function Modal({ open, title, description, onClose, children, footer }: M
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative z-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"
+        className="relative z-10 max-h-[min(92dvh,44rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-6"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
@@ -51,7 +51,7 @@ export function Modal({ open, title, description, onClose, children, footer }: M
           <Button variant="ghost" size="sm" aria-label="Close dialog" onClick={onClose} icon={<X size={16} />} />
         </div>
         <div className="space-y-4">{children}</div>
-        {footer ? <div className="mt-6 flex justify-end gap-2">{footer}</div> : null}
+        {footer ? <div className="mt-6 flex flex-wrap justify-end gap-2">{footer}</div> : null}
       </div>
     </div>
   );
