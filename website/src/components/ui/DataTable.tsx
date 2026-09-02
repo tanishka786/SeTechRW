@@ -13,9 +13,10 @@ interface DataTableProps<T> {
   rows: T[];
   rowKey: (row: T) => string;
   empty?: ReactNode;
+  rowClassName?: (row: T, index: number) => string | undefined;
 }
 
-export function DataTable<T>({ columns, rows, rowKey, empty }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, empty, rowClassName }: DataTableProps<T>) {
   return (
     <div className="max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div className="overflow-x-auto">
@@ -31,7 +32,10 @@ export function DataTable<T>({ columns, rows, rowKey, empty }: DataTableProps<T>
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={rowKey(row)} className="border-t border-slate-100 hover:bg-brand-yellow/15">
+              <tr
+                key={rowKey(row)}
+                className={cn('border-t border-slate-100 hover:bg-brand-yellow/15', rowClassName?.(row, index))}
+              >
                 {columns.map((col) => (
                   <td key={col.key} className={cn('whitespace-nowrap px-4 py-3 text-slate-700', col.className)}>
                     {col.render ? col.render(row, index) : String((row as Record<string, unknown>)[col.key] ?? '')}

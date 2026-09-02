@@ -3,7 +3,7 @@
   "ingestKey": "forklift-uwb-test",
   "chips": {
     "tag": { "port": "COM12", "mac": "00:00" },
-    "primary": { "port": "COM9", "mac": "00:01" },
+    "primary": { "port": "COM4", "mac": "00:01" },
     "secondary": { "port": "COM10", "mac": "00:02" }
   }
 }

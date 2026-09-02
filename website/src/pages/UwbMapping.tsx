@@ -128,11 +128,26 @@ export function UwbMappingPage() {
   }, [data]);
 
   const rows = useMemo(() => {
-    const list = data?.mappings ?? [];
-    return list.filter((row) => {
+    const list = (data?.mappings ?? []).filter((row) => {
       const matchesMachine = forkliftId === 'all' || row.forkliftId === forkliftId;
       const hay = `${formatMachineId(row.forkliftId)} ${row.forkliftId} ${row.tagName} ${formatBinId(row.binId)} ${row.binId} ${row.primaryName} ${row.chipId}`;
       return matchesMachine && matchesSearch(hay, query);
+    });
+    const liveCutoff = Date.now() - 20_000;
+    const idNumber = (value: string) => {
+      const match = value.match(/(\d+)/);
+      return match ? Number(match[1]) : 0;
+    };
+    const isLive = (row: UwbMapping) =>
+      row.hops.some((hop) => hop.source === 'dwm3001c') && new Date(row.updatedAt).getTime() >= liveCutoff;
+    return [...list].sort((a, b) => {
+      const aLive = isLive(a);
+      const bLive = isLive(b);
+      if (aLive !== bLive) return aLive ? -1 : 1;
+      if (aLive && bLive) return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      const byMachine = idNumber(a.forkliftId) - idNumber(b.forkliftId);
+      if (byMachine !== 0) return byMachine;
+      return idNumber(a.binId) - idNumber(b.binId);
     });
   }, [data, forkliftId, query]);
 
@@ -209,7 +224,9 @@ export function UwbMappingPage() {
 
       <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
         <h3 className="text-sm font-semibold text-slate-900">Floor map</h3>
-        <p className="mt-0.5 text-xs text-slate-500">Dashed line is the nearest bin path for each selected tag.</p>
+        <p className="mt-0.5 text-xs text-slate-500">
+          The forklift tag moves on this map as live UWB distance updates. Dashed line is the nearest bin path.
+        </p>
         <div className="mt-4">
           {data ? (
             <UwbFloorMap devices={data.devices} mappings={data.mappings} selectedForkliftId={forkliftId} />
@@ -227,8 +244,19 @@ export function UwbMappingPage() {
       <DataTable
         rows={rows}
         rowKey={(row) => `${row.tagId}-${row.primaryId}`}
+        rowClassName={(row) =>
+          row.hops.some((hop) => hop.source === 'dwm3001c') && Date.now() - new Date(row.updatedAt).getTime() < 20_000
+            ? 'bg-brand-yellow/25'
+            : undefined
+        }
         empty={<EmptyState icon={<Radio />} title="No mappings" description="Add forklifts and bins to see UWB distances." />}
         columns={[
+          {
+            key: 'serial',
+            header: 'Sr No.',
+            className: 'w-20',
+            render: (_row, index) => index + 1,
+          },
           {
             key: 'forklift',
             header: 'Forklift',
@@ -239,6 +267,15 @@ export function UwbMappingPage() {
             key: 'bin',
             header: 'Bin',
             render: (row) => formatBinId(row.binId),
+          },
+          {
+            key: 'mapping',
+            header: 'Mapping',
+            render: (row) => (
+              <span className="font-medium text-slate-800">
+                {formatMachineId(row.forkliftId)} → {formatBinId(row.binId)}
+              </span>
+            ),
           },
           {
             key: 'distance',

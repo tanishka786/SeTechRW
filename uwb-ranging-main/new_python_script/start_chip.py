@@ -103,6 +103,37 @@ def peers_for(role: str, test_case: str, hop: int) -> tuple[bool, str]:
     raise SystemExit("Case A hop 2 is secondary <-> primary. Tag stays idle.")
 
 
+def session_id(test_case: str, hop: int) -> str:
+    if test_case == "C":
+        return "42"
+    return "50" if hop == 1 else "51"
+
+
+def clear_old_sessions(port: str) -> None:
+    try:
+        from uci import Client
+    except Exception as exc:
+        print(f"Note: could not import UCI to clear sessions ({exc})")
+        return
+    client = None
+    try:
+        client = Client(port=port)
+        for sid in (1, 2, 42, 43, 50, 51):
+            try:
+                client.session_deinit(sid)
+            except Exception:
+                pass
+        print("Cleared leftover sessions on the chip.")
+    except Exception as exc:
+        print(f"Note: unplug/replug {port} if session init fails ({exc})")
+    finally:
+        if client is not None:
+            try:
+                client.close()
+            except Exception:
+                pass
+
+
 def main():
     parser = argparse.ArgumentParser(description="Start one DWM3001C for warehouse TWR testing.")
     parser.add_argument("--role", required=True, choices=["tag", "primary", "secondary"])
@@ -125,6 +156,12 @@ def main():
     api_url = config.get("apiUrl") or "http://127.0.0.1:5000"
     ingest_key = config.get("ingestKey") or "forklift-uwb-test"
     mac_to_role = {norm_mac(item["mac"]): name for name, item in chips.items()}
+    sid = session_id(args.case, args.hop)
+
+    if args.case == "A" and args.hop == 1 and args.role == "tag":
+        print("Start the secondary on the other laptop FIRST, then run this tag command.")
+
+    clear_old_sessions(port)
 
     cmd = [
         sys.executable,
@@ -138,7 +175,7 @@ def main():
         "--dest-mac",
         dest_mac,
         "--session",
-        "42" if args.hop == 1 else "43",
+        sid,
     ]
     if controlee:
         cmd.append("--controlee")
@@ -146,13 +183,21 @@ def main():
     print("=" * 60)
     print(f"Role        : {args.role} ({'controlee' if controlee else 'initiator'})")
     print(f"Case        : {'A hop ' + str(args.hop) if args.case == 'A' else 'C direct'}")
+    print(f"Session     : {sid}")
     print(f"Port        : {port}")
     print(f"MAC         : {local_mac} -> {dest_mac} ({peer_role})")
     print(f"API         : {api_url}")
     print("Distance    : posted in meters (cm / 100)")
     print("=" * 60)
 
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    process = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
     last_status = None
     last_mac = dest_mac
     try:
@@ -176,8 +221,16 @@ def main():
                 continue
             post_range(api_url, ingest_key, args.role, to_role, distance_cm)
     except KeyboardInterrupt:
-        print("\nStopping chip...")
-        process.terminate()
+        print("\nStopping chip (sending RETURN so the session can deinit)...")
+        try:
+            if process.stdin:
+                process.stdin.write("\n")
+                process.stdin.flush()
+            process.wait(timeout=8)
+        except Exception:
+            process.terminate()
+            process.wait()
+        return
     process.wait()
 
 
