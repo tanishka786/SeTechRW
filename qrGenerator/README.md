@@ -53,3 +53,7 @@ is treated as a visual/behavioral reference only.
 
 This POC does NOT impersonate or call that URL. It creates its own local
 token and scan-result route.
+
+NOTE - These records are FICTIONAL demo data created for the local QR/barcode warehouse POC.
+They are not representations of actual Birla Carbon products, batches, prices,
+manufacturing records, or inventory.
