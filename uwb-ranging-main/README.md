@@ -67,3 +67,26 @@ To perform a ranging session:
 python uci_uart_fira_test.py -p <COMX> -a 00:00 -t <XX:XX> [--controlee]
 ```
 - Press `Start ranging` on the phone
+
+
+
+    Case C(direct hop):
+        Other laptop (primary / Bin 1): python start_chip.py --role bin1 --case C
+        This PC (tag): python start_chip.py --role tag --case C --bin 1
+
+    Two-bin placement (3 laptops):
+        On UWB Mapping (/uwb) select Case C · Direct, then click Restart two-bin test.
+        Bin 1 laptop: python start_chip.py --role bin1 --case C
+        Bin 2 laptop: python start_chip.py --role bin2 --case C
+        Tag laptop:   python start_chip.py --role tag --case C --scan-bins
+        Scan a QR, walk the tag laptop next to Bin 1 or Bin 2, click End journey.
+        The API keeps the latest live distance to each bin and places the product in the nearer one.
+
+    Case A hop 1 — Machine 1 ↔ secondary
+        Other laptop (secondary): python start_chip.py --role secondary --case A
+    This PC (tag):  python start_chip.py --role tag --case A
+                Wait for Posted tag -> secondary
+
+    Case A hop 2 — secondary ↔ Bin 1
+        Primary first: python start_chip.py --role primary --case A --hop 2
+        Secondary chip: python start_chip.py --role secondary --case A --hop 2

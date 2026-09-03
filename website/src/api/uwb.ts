@@ -18,3 +18,7 @@ export function setUwbTestCase(testCase: 'A' | 'C') {
     body: JSON.stringify({ testCase }),
   });
 }
+
+export function restartUwbTest() {
+  return api<UwbMappingResponse>('/api/uwb/restart', { method: 'POST' });
+}

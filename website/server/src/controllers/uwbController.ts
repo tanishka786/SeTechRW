@@ -1,6 +1,6 @@
 import type { Response } from 'express';
 import type { AuthedRequest } from '../middleware/auth';
-import { ensureUwbTopology, getUwbMapping, ingestLiveRange, setMappingDistance, setUwbTestCase } from '../services/uwbRanging';
+import { ensureUwbTopology, getUwbMapping, ingestLiveRange, restartTwoBinTest, setMappingDistance, setUwbTestCase } from '../services/uwbRanging';
 import { UwbDevice } from '../models/UwbDevice';
 
 export async function getMapping(_req: AuthedRequest, res: Response) {
@@ -48,4 +48,12 @@ export async function updateTestCase(req: AuthedRequest, res: Response) {
     return;
   }
   res.json(await setUwbTestCase(testCase));
+}
+
+export async function restartTest(_req: AuthedRequest, res: Response) {
+  try {
+    res.json(await restartTwoBinTest());
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Unable to restart UWB test' });
+  }
 }

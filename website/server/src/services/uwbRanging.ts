@@ -6,17 +6,19 @@ import { UwbDistance } from '../models/UwbDistance';
 import { UwbRange } from '../models/UwbRange';
 
 const CHIP = 'Qorvo DWM3001C';
-const CHIP_STALE_MS = 15_000;
+const CHIP_STALE_MS = 20_000;
 const FLOOR = { minX: 1, maxX: 31, minY: 1, maxY: 27 };
 
 export const TEST_FORKLIFT_ID = 'FLT-001';
 export const TEST_BIN_ID = 'BIN-001';
+export const TEST_BIN_2_ID = 'BIN-002';
 export const TEST_SECONDARY_ID = 'ANC-S-A';
 
 const TEST_MAC = {
   tag: '00:00',
   primary: '00:01',
   secondary: '00:02',
+  bin2: '00:02',
 } as const;
 
 export function pairKey(a: string, b: string) {
@@ -29,6 +31,15 @@ export function mappingKey(tagId: string, primaryId: string) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+async function applyTestChipMacs() {
+  await Promise.all([
+    UwbDevice.updateOne({ role: 'tag', forkliftId: TEST_FORKLIFT_ID }, { $set: { macAddress: TEST_MAC.tag } }),
+    UwbDevice.updateOne({ role: 'primary', binId: TEST_BIN_ID }, { $set: { macAddress: TEST_MAC.primary } }),
+    UwbDevice.updateOne({ role: 'primary', binId: TEST_BIN_2_ID }, { $set: { macAddress: TEST_MAC.bin2 } }),
+    UwbDevice.updateOne({ id: TEST_SECONDARY_ID }, { $set: { macAddress: TEST_MAC.secondary } }),
+  ]);
 }
 
 function metersToMm(meters: number) {
@@ -113,7 +124,10 @@ export async function ensureUwbTopology(force = false) {
       Forklift.countDocuments(),
       Bin.countDocuments(),
     ]);
-    if (deviceCount >= forkliftCount + binCount + SECONDARIES.length) return;
+    if (deviceCount >= forkliftCount + binCount + SECONDARIES.length) {
+      await applyTestChipMacs();
+      return;
+    }
   }
   for (const secondary of SECONDARIES) {
     await UwbDevice.findOneAndUpdate(
@@ -152,7 +166,8 @@ export async function ensureUwbTopology(force = false) {
         role: 'primary',
         chipModel: 'DWM3001C',
         chipId: `QORVO-DWM3001C-P${String(index + 1).padStart(2, '0')}`,
-        macAddress: bin.id === TEST_BIN_ID ? TEST_MAC.primary : '',
+        macAddress:
+          bin.id === TEST_BIN_ID ? TEST_MAC.primary : bin.id === TEST_BIN_2_ID ? TEST_MAC.bin2 : '',
         forkliftId: null,
         binId: bin.id,
         relayIds: layout.relayIds,
@@ -299,9 +314,15 @@ function cmToMm(cm: number) {
 
 export async function resolveTestDevice(role: string) {
   await ensureUwbTopology();
-  if (role === 'tag') return UwbDevice.findOne({ role: 'tag', forkliftId: TEST_FORKLIFT_ID });
-  if (role === 'primary') return UwbDevice.findOne({ role: 'primary', binId: TEST_BIN_ID });
-  if (role === 'secondary') return UwbDevice.findOne({ id: TEST_SECONDARY_ID, role: 'secondary' });
+  const key = String(role ?? '').trim().toLowerCase();
+  if (key === 'tag') return UwbDevice.findOne({ role: 'tag', forkliftId: TEST_FORKLIFT_ID });
+  if (key === 'primary' || key === 'bin1' || key === 'bin-1') {
+    return UwbDevice.findOne({ role: 'primary', binId: TEST_BIN_ID });
+  }
+  if (key === 'bin2' || key === 'bin-2' || key === 'primary2') {
+    return UwbDevice.findOne({ role: 'primary', binId: TEST_BIN_2_ID });
+  }
+  if (key === 'secondary') return UwbDevice.findOne({ id: TEST_SECONDARY_ID, role: 'secondary' });
   return null;
 }
 
@@ -370,6 +391,18 @@ export async function setUwbTestCase(testCase: string) {
   await Settings.findOneAndUpdate(
     { key: 'warehouse' },
     { uwbTestCase: next, lastUpdated: new Date().toISOString() },
+    { upsert: true },
+  );
+  return getUwbMapping();
+}
+
+export async function restartTwoBinTest() {
+  await ensureUwbTopology(true);
+  await applyTestChipMacs();
+  await UwbRange.deleteMany({ source: 'dwm3001c' });
+  await Settings.findOneAndUpdate(
+    { key: 'warehouse' },
+    { uwbTestCase: 'C', lastUpdated: new Date().toISOString() },
     { upsert: true },
   );
   return getUwbMapping();
@@ -454,7 +487,7 @@ export async function getUwbMapping() {
     for (const primary of primaries) {
       const bin = bins.find((b) => b.id === primary.binId);
       const relays =
-        primary.binId === TEST_BIN_ID
+        primary.binId === TEST_BIN_ID || primary.binId === TEST_BIN_2_ID
           ? testCase === 'A'
             ? [TEST_SECONDARY_ID]
             : []
@@ -515,16 +548,29 @@ export async function getUwbMapping() {
     }
   }
 
-  const byTag = new Map<string, number>();
+  const byTag = new Map<string, { live: number | null; any: number | null }>();
   for (const row of mappings) {
     if (row.status !== 'ok') continue;
-    const current = byTag.get(row.tagId);
-    if (current === undefined || row.totalDistanceM < current) {
-      byTag.set(row.tagId, row.totalDistanceM);
-    }
+    const live = row.hops.some(
+      (hop) => hop.source === 'dwm3001c' && Date.now() - new Date(row.updatedAt).getTime() < CHIP_STALE_MS,
+    );
+    const current = byTag.get(row.tagId) ?? { live: null, any: null };
+    if (current.any === null || row.totalDistanceM < current.any) current.any = row.totalDistanceM;
+    if (live && (current.live === null || row.totalDistanceM < current.live)) current.live = row.totalDistanceM;
+    byTag.set(row.tagId, current);
   }
   for (const row of mappings) {
-    row.isNearest = row.status === 'ok' && byTag.get(row.tagId) === row.totalDistanceM;
+    const best = byTag.get(row.tagId);
+    const target = best?.live ?? best?.any;
+    const live = row.hops.some(
+      (hop) => hop.source === 'dwm3001c' && Date.now() - new Date(row.updatedAt).getTime() < CHIP_STALE_MS,
+    );
+    row.isNearest =
+      row.status === 'ok' &&
+      target !== null &&
+      target !== undefined &&
+      row.totalDistanceM === target &&
+      (best?.live == null || live);
   }
 
   const chipLive = ranges.some(

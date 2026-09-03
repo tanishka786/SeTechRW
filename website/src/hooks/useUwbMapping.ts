@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchUwbMapping, setUwbTestCase, updateUwbDistance } from '../api/uwb';
+import { fetchUwbMapping, restartUwbTest, setUwbTestCase, updateUwbDistance } from '../api/uwb';
 import { ApiError } from '../api/client';
 import type { UwbMapping, UwbMappingResponse } from '../types';
 
@@ -42,5 +42,12 @@ export function useUwbMapping() {
     setError(null);
   };
 
-  return { data, error, setData, setError, saveDistance, changeTestCase };
+  const restartTest = async () => {
+    const next = await restartUwbTest();
+    setData(next);
+    setError(null);
+    return next;
+  };
+
+  return { data, error, setData, setError, saveDistance, changeTestCase, restartTest };
 }
