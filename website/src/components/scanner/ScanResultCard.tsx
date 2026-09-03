@@ -11,17 +11,11 @@ export function ScanResultCard({
   codeType: ScanRow['codeType'];
   result: LookupResult | null;
 }) {
-  if (!result) {
-    return (
-      <section className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-sm text-slate-500">
-        Scan a QR or barcode, or paste a URL from the Birla Carbon Excel file.
-      </section>
-    );
-  }
+  if (!result) return null;
 
   if (!result.found) {
     return (
-      <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+      <section className="flex h-full flex-col justify-center rounded-2xl border border-rose-200 bg-rose-50 p-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">{codeType}</p>
         <h3 className="mt-1 break-all font-semibold text-slate-900">{code}</h3>
         <p className="mt-3 text-sm text-rose-700">{result.error ?? 'No matching record found for this barcode / QR code.'}</p>
@@ -44,13 +38,13 @@ export function ScanResultCard({
     : [];
 
   return (
-    <section className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
+    <section className="flex h-full min-h-0 flex-col rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="success">Found</Badge>
         <Badge variant="accent">{codeType}</Badge>
       </div>
       <p className="mt-2 break-all font-mono text-xs text-slate-500">{code}</p>
-      <h3 className="mt-2 text-lg font-semibold text-slate-900">{result.matchedItem || catalog?.productName}</h3>
+      <h3 className="mt-1 text-xl font-semibold text-slate-900">{result.matchedItem || catalog?.productName}</h3>
       {result.location ? <p className="text-sm text-slate-500">{result.location}</p> : null}
 
       {fields.length > 0 ? (
@@ -65,7 +59,7 @@ export function ScanResultCard({
       ) : null}
 
       {result.bin ? (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-auto pt-4">
           <Link to="/bins" className="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700">
             View Bin
           </Link>

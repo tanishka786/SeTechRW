@@ -13,9 +13,9 @@ export function Settings() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900">Profile</h2>
-        <p className="mt-1 text-sm text-slate-500">These preferences are stored locally for this POC.</p>
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <h2 className="text-lg font-semibold text-slate-900">User Profile</h2>
+        <p className="mt-1 text-sm text-slate-500">Update how your name appears in warehouse activity.</p>
         <div className="mt-4 space-y-3">
           <Input label="Display name" value={name} onChange={(e) => setName(e.target.value)} />
           <Input label="Email" value={currentUser?.email ?? ''} disabled />
@@ -32,7 +32,7 @@ export function Settings() {
           <Button
             onClick={() => {
               window.localStorage.setItem('forklift-settings', JSON.stringify({ name, shift }));
-              pushToast('success', 'Settings saved');
+              pushToast('success', 'Profile saved');
             }}
           >
             Save changes

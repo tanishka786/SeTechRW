@@ -20,7 +20,7 @@ export function ChartCard({
         </div>
         {action}
       </div>
-      <div className="h-44 w-full min-w-0 sm:h-56">{children}</div>
+      <div className="h-52 w-full min-w-0 md:h-64">{children}</div>
     </section>
   );
 }

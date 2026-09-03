@@ -8,23 +8,25 @@ const titles: Record<string, string> = {
   '/bins': 'Bins',
   '/forklifts': 'Forklifts',
   '/uwb': 'UWB Mapping',
+  '/uwb/table': 'UWB Table',
   '/users': 'User Login Activity',
   '/scanner': 'Barcode & QR Scanner',
-  '/analytics': 'Live Warehouse Analytics',
-  '/settings': 'Settings',
+  '/scan-history': 'Scan History',
+  '/analytics': 'Warehouse Analytics',
+  '/settings': 'User Profile',
 };
 
 export function AppLayout() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const { pathname } = useLocation();
   const title = titles[pathname] ?? 'Birla Carbon';
 
   return (
-    <div className="min-h-dvh lg:flex">
+    <div className="flex min-h-dvh items-stretch">
       <Sidebar open={open} onClose={() => setOpen(false)} />
-      <div className="app-canvas min-w-0 flex-1 overflow-x-hidden">
-        <Topbar title={title} onMenu={() => setOpen(true)} />
-        <main className="px-3 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-6">
+      <div className="app-canvas flex min-h-dvh min-w-0 flex-1 flex-col overflow-x-hidden">
+        <Topbar title={title} showMenu={!open} onMenu={() => setOpen(true)} />
+        <main className="flex min-h-0 flex-1 flex-col px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-6 md:py-5">
           <Outlet />
         </main>
       </div>

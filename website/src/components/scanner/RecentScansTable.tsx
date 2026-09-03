@@ -24,21 +24,23 @@ export function RecentScansTable({
 }) {
   return (
     <section className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-row items-center gap-2 sm:gap-3">
         <SearchBar value={query} onChange={onQuery} placeholder="Search scan history" />
-        <Select
-          value={status}
-          onChange={(e) => onStatus(e.target.value)}
-          options={[
-            { value: 'all', label: 'All statuses' },
-            { value: 'Found', label: 'Found' },
-            { value: 'Not Found', label: 'Not Found' },
-          ]}
-          className="sm:w-44"
-        />
+        <div className="w-32 shrink-0 sm:w-44">
+          <Select
+            value={status}
+            onChange={(e) => onStatus(e.target.value)}
+            options={[
+              { value: 'all', label: 'All statuses' },
+              { value: 'Found', label: 'Found' },
+              { value: 'Not Found', label: 'Not Found' },
+            ]}
+          />
+        </div>
       </div>
       <DataTable
         rows={rows}
+        resetKey={`${query}-${status}`}
         rowKey={(row) => row.id}
         empty={<EmptyState icon={<Search />} title="No scans yet" description="Scan a label or enter a product ref from the Excel file." />}
         columns={[

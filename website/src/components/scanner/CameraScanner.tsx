@@ -24,9 +24,11 @@ function classify(value: string): ScanRow['codeType'] {
 export function CameraScanner({
   onScan,
   busy,
+  compact = false,
 }: {
   onScan: (code: string, type: ScanRow['codeType']) => void;
   busy: boolean;
+  compact?: boolean;
 }) {
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [cameraId, setCameraId] = useState('');
@@ -44,7 +46,7 @@ export function CameraScanner({
         setCameraId(rear?.id ?? devices[0]?.id ?? '');
       })
       .catch(() => {
-        setError('Camera permission is blocked. Enable camera access or enter the code manually.');
+        setError('Camera permission is blocked. Use manual entry.');
       });
     return () => {
       const scanner = scannerRef.current;
@@ -74,7 +76,7 @@ export function CameraScanner({
       if (scanner.isScanning) await scanner.stop();
       await scanner.start(
         cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' },
-        { fps: 8, qrbox: { width: 240, height: 240 } },
+        { fps: 8, qrbox: { width: 140, height: 140 } },
         (decoded) => {
           const now = Date.now();
           if (decoded === lastRef.current.code && now - lastRef.current.at < 2500) return;
@@ -85,7 +87,7 @@ export function CameraScanner({
       );
       setRunning(true);
     } catch {
-      setError('Camera permission is blocked. Enable camera access or enter the code manually.');
+      setError('Camera permission is blocked. Use manual entry.');
       setRunning(false);
     }
   };
@@ -104,12 +106,15 @@ export function CameraScanner({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-slate-900">Live scanner</h3>
         <span className="text-xs text-slate-500">{running ? 'Camera on' : 'Camera off'}</span>
       </div>
-      <div id="forklift-scanner" className="min-h-48 overflow-hidden rounded-xl bg-slate-950 sm:min-h-56" />
+      <div
+        id="forklift-scanner"
+        className="forklift-scanner h-36 w-full shrink-0 overflow-hidden rounded-xl bg-slate-950"
+      />
       {cameras.length > 1 ? (
         <div className="mt-3">
           <Select
@@ -120,19 +125,20 @@ export function CameraScanner({
           />
         </div>
       ) : null}
-      {error ? <p className="mt-3 text-sm text-rose-600">{error}</p> : null}
+      {error ? <p className="mt-3 text-xs leading-5 text-rose-600">{error}</p> : null}
       <div className="mt-3 flex flex-wrap gap-2">
         {running ? (
-          <Button variant="outline" onClick={() => void stop()}>
+          <Button variant="outline" size="sm" onClick={() => void stop()}>
             Stop camera
           </Button>
         ) : (
-          <Button onClick={() => void start()} icon={<Video size={16} />}>
+          <Button size="sm" onClick={() => void start()} icon={<Video size={16} />}>
             Start camera
           </Button>
         )}
         <Button
           variant="ghost"
+          size="sm"
           onClick={() => void toggleTorch()}
           disabled={!running}
           icon={torch ? <FlashlightOff size={16} /> : <Flashlight size={16} />}
@@ -140,6 +146,11 @@ export function CameraScanner({
           {torch ? 'Torch off' : 'Torch'}
         </Button>
       </div>
+      {!compact ? (
+        <p className="mt-auto pt-4 text-xs leading-5 text-slate-500">
+          Point the tablet camera at a barcode or QR label. Matching Excel data opens on the left.
+        </p>
+      ) : null}
     </section>
   );
 }

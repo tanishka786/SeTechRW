@@ -186,23 +186,25 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 lg:flex-row">
+      <div className="flex flex-row items-center gap-2 sm:gap-3">
         <SearchBar value={query} onChange={setQuery} placeholder="Search users, email, or machine" />
-        <Select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as SessionStatus | 'All')}
-          options={[
-            { value: 'All', label: 'All statuses' },
-            { value: 'Active', label: 'Active' },
-            { value: 'Logged Out', label: 'Logged Out' },
-          ]}
-          className="lg:w-44"
-        />
-        <DateFilter value={date} onChange={setDate} className="lg:w-52" />
+        <div className="w-32 shrink-0 sm:w-44">
+          <Select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as SessionStatus | 'All')}
+            options={[
+              { value: 'All', label: 'All statuses' },
+              { value: 'Active', label: 'Active' },
+              { value: 'Logged Out', label: 'Logged Out' },
+            ]}
+          />
+        </div>
+        <DateFilter value={date} onChange={setDate} className="w-36 shrink-0 sm:w-52" />
       </div>
 
       <DataTable
         rows={filtered}
+        resetKey={`${query}-${status}-${date}`}
         rowKey={(row) => row.id}
         empty={<EmptyState icon={<Users />} title="No login activity" description="No sessions match the selected filters." />}
         columns={[

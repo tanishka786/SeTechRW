@@ -1,11 +1,17 @@
 import { Bell } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useWarehouse } from '../../context/WarehouseContext';
 import { formatMachineId } from '../../utils/validation';
 
 export function NotificationBell() {
   const warehouse = useWarehouse();
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const items = useMemo(() => {
     const unassigned = warehouse.forklifts
@@ -21,7 +27,7 @@ export function NotificationBell() {
             {
               id: 'scans',
               title: `${warehouse.scanStats.unmatchedToday} unmatched scan${warehouse.scanStats.unmatchedToday === 1 ? '' : 's'} today`,
-              detail: 'Review the Barcode / QR page',
+              detail: 'Review Scan History',
             },
           ]
         : [];

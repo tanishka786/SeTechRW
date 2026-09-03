@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ImageUp } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 
 export function ManualCodeForm({
   onLookup,
@@ -21,21 +20,27 @@ export function ManualCodeForm({
 
   return (
     <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-900">Manual entry</h3>
-      <p className="mt-1 text-xs text-slate-500">Paste a QR URL or barcode from Birla_Carbon_Demo_Queue.xlsx.</p>
-      <div className="mt-3">
-        <Input
-          label="Code"
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">Manual entry</h3>
+          <p className="text-xs text-slate-500">Enter a barcode or paste a QR URL from the Excel file.</p>
+        </div>
+      </div>
+      <div className="mt-3 flex min-w-0 flex-row items-center gap-2">
+        <input
+          aria-label="Code"
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="226587 or http://127.0.0.1:5000/scan/226587"
+          placeholder="Code, barcode, or QR URL"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-brand-orange focus:ring-4 focus:ring-brand-orange/15"
         />
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" disabled={busy} className="shrink-0 whitespace-nowrap">
           Look up
         </Button>
-        <label className="inline-flex">
+        <label className="inline-flex shrink-0">
           <input
             type="file"
             accept="image/*"
@@ -46,7 +51,7 @@ export function ManualCodeForm({
               e.target.value = '';
             }}
           />
-          <span className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+          <span className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 sm:px-4">
             <ImageUp size={16} />
             Decode image
           </span>

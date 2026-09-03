@@ -11,10 +11,12 @@ import { Dashboard } from './pages/Dashboard';
 import { Forklifts } from './pages/Forklifts';
 import { Login } from './pages/Login';
 import { OTP } from './pages/OTP';
+import { ScanHistory } from './pages/ScanHistory';
 import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
 import { UsersPage } from './pages/Users';
 import { UwbMappingPage } from './pages/UwbMapping';
+import { UwbTablePage } from './pages/UwbTable';
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -42,9 +44,11 @@ export default function App() {
               <Route path="/bins" element={<Bins />} />
               <Route path="/forklifts" element={<Forklifts />} />
               <Route path="/uwb" element={<UwbMappingPage />} />
+              <Route path="/uwb/table" element={<UwbTablePage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/inventory" element={<Navigate to="/" replace />} />
               <Route path="/scanner" element={<Scanner />} />
+              <Route path="/scan-history" element={<ScanHistory />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

@@ -1,27 +1,30 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3,
+  ChevronRight,
   Forklift,
+  History,
   LayoutDashboard,
   LogOut,
   Radio,
   ScanLine,
-  Settings,
+  Table2,
+  UserRound,
   Users,
   Warehouse,
-  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
-import { Button } from '../ui/Button';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/bins', label: 'Bins', icon: Warehouse },
   { to: '/forklifts', label: 'Forklifts', icon: Forklift },
   { to: '/uwb', label: 'UWB Mapping', icon: Radio },
+  { to: '/uwb/table', label: 'UWB Table', icon: Table2 },
   { to: '/users', label: 'Users', icon: Users },
   { to: '/scanner', label: 'Barcode / QR', icon: ScanLine },
+  { to: '/scan-history', label: 'Scan History', icon: History },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
@@ -36,31 +39,22 @@ export function Sidebar({
   const location = useLocation();
 
   return (
-    <>
-      {open ? (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-slate-950/40 lg:hidden"
-          onClick={onClose}
-        />
-      ) : null}
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-40 flex h-dvh w-[min(18rem,calc(100vw-2.5rem))] flex-col overflow-y-auto border-r border-white/5 bg-black text-slate-200 transition-transform duration-200 lg:static lg:h-auto lg:min-h-dvh lg:w-72 lg:translate-x-0',
-          open ? 'translate-x-0' : '-translate-x-full',
-        )}
-      >
-        <div className="flex items-center justify-between gap-3 px-5 py-5">
-          <div className="min-w-0">
+    <aside
+      className={cn(
+        'relative z-40 shrink-0 self-stretch bg-black text-slate-200 transition-[width] duration-300 ease-out',
+        open ? 'w-72 overflow-visible' : 'w-0 overflow-hidden',
+      )}
+    >
+      <div className="sticky top-0 flex h-dvh w-72 flex-col overflow-y-auto border-r border-white/5">
+        <div className="flex items-center gap-3 px-5 py-5">
+          <Link to="/" className="min-w-0" aria-label="Go to dashboard">
             <img
               src="/aditya-birla-logo-retina.png"
               alt="Aditya Birla Group"
               className="h-9 w-auto max-w-[11rem] rounded-md bg-white object-contain p-1"
             />
             <p className="mt-2 text-sm font-semibold tracking-tight text-white">Birla Carbon</p>
-          </div>
-          <Button variant="ghost" size="sm" className="text-slate-300 lg:hidden" aria-label="Close sidebar" onClick={onClose} icon={<X size={16} />} />
+          </Link>
         </div>
 
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 pb-3">
@@ -71,7 +65,6 @@ export function Sidebar({
               <NavLink
                 key={link.to}
                 to={link.to}
-                onClick={onClose}
                 className={cn(
                   'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
                   active ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white',
@@ -87,7 +80,6 @@ export function Sidebar({
         <div className="space-y-1 border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <NavLink
             to="/settings"
-            onClick={onClose}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition',
@@ -95,8 +87,8 @@ export function Sidebar({
               )
             }
           >
-            <Settings size={18} />
-            Settings
+            <UserRound size={18} />
+            User Profile
           </NavLink>
           <button
             type="button"
@@ -107,7 +99,18 @@ export function Sidebar({
             Logout
           </button>
         </div>
-      </aside>
-    </>
+      </div>
+
+      {open ? (
+        <button
+          type="button"
+          aria-label="Collapse navigation"
+          onClick={onClose}
+          className="absolute top-1/2 right-2 z-50 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-white text-slate-800 shadow-md touch-manipulation"
+        >
+          <ChevronRight size={16} />
+        </button>
+      ) : null}
+    </aside>
   );
 }

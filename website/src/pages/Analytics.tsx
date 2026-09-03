@@ -137,7 +137,7 @@ export function Analytics() {
         <StatCard label="Bins Occupied" value={`${stats.occupiedBins} / ${stats.binCount}`} />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Forklift Activity" subtitle="Trips completed by each machine">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={forkliftData}>
@@ -162,11 +162,11 @@ export function Analytics() {
         </ChartCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-        <div className="xl:col-span-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="lg:col-span-3">
           <WarehouseActivityChart points={warehouse.inventoryHistory} />
         </div>
-        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm xl:col-span-2">
+        <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm lg:col-span-2">
           <h3 className="mb-3 text-sm font-semibold text-slate-900">Recent Events</h3>
           <ActivityFeed events={warehouse.events.slice(0, 8)} />
         </section>

@@ -68,7 +68,7 @@ export function UwbFloorMap({
 
   return (
     <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-auto w-full min-h-[280px] rounded-xl bg-slate-50">
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="h-auto w-full min-h-[200px] rounded-xl bg-slate-50 md:min-h-[280px]">
         <rect x="16" y="12" width={WIDTH - 32} height={HEIGHT - 24} rx="16" fill="#f8fafc" stroke="#e2e8f0" />
         <text x="32" y="36" className="fill-slate-400" fontSize="11">
           Warehouse floor · tag moves as live distance updates (metres)

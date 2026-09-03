@@ -13,7 +13,7 @@ export function SearchBar({
   className?: string;
 }) {
   return (
-    <label className={cn('relative block min-w-[180px] flex-1', className)}>
+    <label className={cn('relative block min-w-0 flex-1', className)}>
       <span className="sr-only">{placeholder}</span>
       <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
       <input

@@ -96,26 +96,24 @@ export function Forklifts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={openCreate} icon={<Plus size={16} />}>
-          Add Machine
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="flex flex-row items-center gap-2 sm:gap-3">
         <SearchBar value={query} onChange={setQuery} placeholder="Search machines" />
-        <Select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as ForkliftStatus | 'All')}
-          options={statuses.map((s) => ({ value: s, label: s === 'All' ? 'All statuses' : s }))}
-          className="sm:w-48"
-        />
+        <div className="w-32 shrink-0 sm:w-48">
+          <Select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as ForkliftStatus | 'All')}
+            options={statuses.map((s) => ({ value: s, label: s === 'All' ? 'All statuses' : s }))}
+          />
+        </div>
+        <Button onClick={openCreate} icon={<Plus size={16} />} className="shrink-0 whitespace-nowrap">
+          Add Forklift
+        </Button>
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState icon={<Forklift />} title="No machines found" description="Add a forklift to start tracking fleet activity." />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((machine) => (
             <ForkliftCard
               key={machine.id}
@@ -141,6 +139,7 @@ export function Forklifts() {
 
       <DataTable
         rows={filtered}
+        resetKey={`${query}-${status}`}
         rowKey={(row) => row.id}
         empty={null}
         columns={[
