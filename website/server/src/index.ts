@@ -4,6 +4,7 @@ import { env } from './config/env';
 import { connectDb } from './config/db';
 import { apiRouter } from './routes/index';
 import { startLiveSimulation } from './services/liveSim';
+import { startDummyUwb } from './services/uwbRanging';
 
 const app = express();
 app.use(cors({ origin: env.clientOrigin, credentials: true, allowedHeaders: ['Content-Type', 'Authorization', 'X-UWB-Key'] }));
@@ -19,6 +20,7 @@ async function start() {
   try {
     await connectDb();
     startLiveSimulation();
+    startDummyUwb();
     app.listen(env.port, () => {
       console.log(`Birla Carbon API listening on http://localhost:${env.port}`);
     });

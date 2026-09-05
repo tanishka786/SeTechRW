@@ -1,6 +1,7 @@
 import { Forklift, Gauge, QrCode, Users, Warehouse } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { KpiGrid } from '../components/dashboard/KpiGrid';
+import { BrandMark } from '../components/layout/BrandMark';
 import { ErrorState } from '../components/ui/LoadingState';
 import { useWarehouse, useWarehouseStats } from '../context/WarehouseContext';
 import { formatNumber } from '../utils/formatters';
@@ -17,11 +18,7 @@ export function Dashboard() {
         <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <div className="flex min-w-0 items-center gap-4">
             <Link to="/" aria-label="Go to dashboard" className="shrink-0">
-              <img
-                src="/aditya-birla-logo-retina.png"
-                alt="Aditya Birla Group"
-                className="h-12 w-auto object-contain sm:h-16"
-              />
+              <BrandMark size={64} className="sm:h-16 sm:w-16" />
             </Link>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-maroon">Aditya Birla Group</p>

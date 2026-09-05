@@ -400,6 +400,10 @@ export async function restartTwoBinTest() {
   await ensureUwbTopology(true);
   await applyTestChipMacs();
   await UwbRange.deleteMany({ source: 'dwm3001c' });
+  await Bin.updateMany(
+    { id: { $in: [TEST_BIN_ID, TEST_BIN_2_ID] }, capacity: { $gte: 90 } },
+    { $set: { capacity: 20, status: 'Occupied' } },
+  );
   await Settings.findOneAndUpdate(
     { key: 'warehouse' },
     { uwbTestCase: 'C', lastUpdated: new Date().toISOString() },

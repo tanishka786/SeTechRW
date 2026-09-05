@@ -185,6 +185,8 @@ def clear_old_sessions(port: str) -> None:
                 client.close()
             except Exception:
                 pass
+            # Windows keeps the COM handle briefly after close; ranging fails without this pause.
+            time.sleep(0.6)
 
 
 def run_ranging(
@@ -302,6 +304,7 @@ def main():
                     dest_mac = chip_for(dest_role, chips)["mac"]
                     sid = session_id("C", 1, bin_no)
                     clear_old_sessions(port)
+                    time.sleep(0.3)
                     run_ranging(
                         port,
                         local_mac,
@@ -332,6 +335,7 @@ def main():
 
     clear_old_sessions(port)
     try:
+        time.sleep(0.3)
         run_ranging(
             port,
             local_mac,

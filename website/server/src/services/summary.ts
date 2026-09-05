@@ -14,9 +14,11 @@ function leanId<T extends { id: string }>(docs: T[]) {
 }
 
 export async function scanStatsNow() {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
   const [today, unmatchedToday] = await Promise.all([
-    ScanEvent.countDocuments({ status: 'Found' }),
-    ScanEvent.countDocuments({ status: 'Not Found' }),
+    ScanEvent.countDocuments({ status: 'Found', createdAt: { $gte: startOfDay } }),
+    ScanEvent.countDocuments({ status: 'Not Found', createdAt: { $gte: startOfDay } }),
   ]);
   return { today, unmatchedToday };
 }

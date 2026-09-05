@@ -53,12 +53,18 @@ async function seedWarehouse() {
 
   if ((await Bin.countDocuments()) === 0) {
     await Bin.insertMany([
-      { id: 'BIN-001', name: 'Bin 1', capacity: 100, location: 'Aisle A · Zone 1', status: 'Full', productCount: 2 },
-      { id: 'BIN-002', name: 'Bin 2', capacity: 100, location: 'Aisle A · Zone 2', status: 'Full', productCount: 2 },
-      { id: 'BIN-003', name: 'Bin 3', capacity: 100, location: 'Aisle B · Zone 1', status: 'Full', productCount: 2 },
+      { id: 'BIN-001', name: 'Bin 1', capacity: 20, location: 'Aisle A · Zone 1', status: 'Occupied', productCount: 2 },
+      { id: 'BIN-002', name: 'Bin 2', capacity: 20, location: 'Aisle A · Zone 2', status: 'Occupied', productCount: 2 },
+      { id: 'BIN-003', name: 'Bin 3', capacity: 40, location: 'Aisle B · Zone 1', status: 'Occupied', productCount: 2 },
       { id: 'BIN-004', name: 'Bin 4', capacity: 50, location: 'Aisle B · Zone 2', status: 'Occupied', productCount: 2 },
       { id: 'BIN-005', name: 'Bin 5', capacity: 30, location: 'Aisle C · Receiving', status: 'Occupied', productCount: 2 },
     ]);
+  } else {
+    // Original seed left Bin 1/2 at 100 kg (Full), so End journey placement always failed.
+    await Bin.updateMany(
+      { id: { $in: ['BIN-001', 'BIN-002'] }, capacity: { $gte: 90 } },
+      { $set: { capacity: 20, status: 'Occupied' } },
+    );
   }
 
   if ((await Product.countDocuments()) === 0) {

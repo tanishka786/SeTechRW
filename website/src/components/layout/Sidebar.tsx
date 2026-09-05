@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
+import { BrandMark } from './BrandMark';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,11 +49,7 @@ export function Sidebar({
       <div className="sticky top-0 flex h-dvh w-72 flex-col overflow-y-auto border-r border-white/5">
         <div className="flex items-center gap-3 px-5 py-5">
           <Link to="/" className="min-w-0" aria-label="Go to dashboard">
-            <img
-              src="/aditya-birla-logo-retina.png"
-              alt="Aditya Birla Group"
-              className="h-9 w-auto max-w-[11rem] rounded-md bg-white object-contain p-1"
-            />
+            <BrandMark size={36} />
             <p className="mt-2 text-sm font-semibold tracking-tight text-white">Birla Carbon</p>
           </Link>
         </div>
