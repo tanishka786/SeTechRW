@@ -92,7 +92,7 @@ export async function placeScan(req: AuthedRequest, res: Response) {
     $or: [{ id: binId }, { name: new RegExp(`^${binId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }],
   });
   if (!bin) {
-    res.status(404).json({ error: `No bin found for ${binId}. Try Bin 4 or BIN-004.` });
+    res.status(404).json({ error: `No bin found for ${binId}. Try Bin 1 or BIN-001.` });
     return;
   }
   if (bin.status === 'Maintenance') {

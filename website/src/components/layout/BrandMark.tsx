@@ -6,27 +6,13 @@ export function BrandMark({
   className?: string;
 }) {
   return (
-    <svg
+    <img
+      src="/aditya-birla-logo-retina.png"
+      alt="Aditya Birla Carbon"
       width={size}
       height={size}
-      viewBox="0 0 64 64"
-      role="img"
-      aria-label="Aditya Birla"
-      className={`shrink-0 rounded-lg ${className}`.trim()}
-    >
-      <rect width="64" height="64" rx="12" fill="#991010" />
-      <text
-        x="32"
-        y="42"
-        textAnchor="middle"
-        fontSize="22"
-        fontWeight="700"
-        fill="#F5D34F"
-        fontFamily="Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif"
-      >
-        AB
-      </text>
-    </svg>
+      className={`shrink-0 rounded-lg bg-white object-contain ${className}`.trim()}
+    />
   );
 }
 

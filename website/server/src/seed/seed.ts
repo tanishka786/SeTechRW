@@ -51,40 +51,46 @@ async function seedWarehouse() {
     });
   }
 
+  const keepBins = ['BIN-001', 'BIN-002'];
   if ((await Bin.countDocuments()) === 0) {
     await Bin.insertMany([
       { id: 'BIN-001', name: 'Bin 1', capacity: 20, location: 'Aisle A · Zone 1', status: 'Occupied', productCount: 2 },
       { id: 'BIN-002', name: 'Bin 2', capacity: 20, location: 'Aisle A · Zone 2', status: 'Occupied', productCount: 2 },
-      { id: 'BIN-003', name: 'Bin 3', capacity: 40, location: 'Aisle B · Zone 1', status: 'Occupied', productCount: 2 },
-      { id: 'BIN-004', name: 'Bin 4', capacity: 50, location: 'Aisle B · Zone 2', status: 'Occupied', productCount: 2 },
-      { id: 'BIN-005', name: 'Bin 5', capacity: 30, location: 'Aisle C · Receiving', status: 'Occupied', productCount: 2 },
     ]);
   } else {
     // Original seed left Bin 1/2 at 100 kg (Full), so End journey placement always failed.
     await Bin.updateMany(
-      { id: { $in: ['BIN-001', 'BIN-002'] }, capacity: { $gte: 90 } },
+      { id: { $in: keepBins }, capacity: { $gte: 90 } },
       { $set: { capacity: 20, status: 'Occupied' } },
     );
   }
+
+  await Product.updateMany({ binId: 'BIN-003' }, { $set: { binId: 'BIN-001' } });
+  await Product.updateMany({ binId: 'BIN-004' }, { $set: { binId: 'BIN-002' } });
+  await Product.updateMany({ binId: 'BIN-005' }, { $set: { binId: 'BIN-001' } });
+  await Bin.deleteMany({ id: { $nin: keepBins } });
+  await Forklift.updateMany({ location: 'Bin 3' }, { $set: { location: 'Bin 1' } });
+  await Forklift.updateMany({ location: 'Bin 4' }, { $set: { location: 'Bin 2' } });
+  await Forklift.updateMany({ location: 'Bin 5' }, { $set: { location: 'Bin 1' } });
 
   if ((await Product.countDocuments()) === 0) {
     await Product.insertMany([
       { id: 'P-001', name: 'Steel Component', categoryId: 'cat-001', quantity: 150, binId: 'BIN-001', status: 'In Stock', lastUpdated: hoursAgo(0, 12) },
       { id: 'P-002', name: 'Industrial Assembly', categoryId: 'cat-002', quantity: 230, binId: 'BIN-002', status: 'In Stock', lastUpdated: hoursAgo(0, 28) },
-      { id: 'P-003', name: 'Heavy Component', categoryId: 'cat-001', quantity: 85, binId: 'BIN-003', status: 'In Stock', lastUpdated: hoursAgo(1, 5) },
+      { id: 'P-003', name: 'Heavy Component', categoryId: 'cat-001', quantity: 85, binId: 'BIN-001', status: 'In Stock', lastUpdated: hoursAgo(1, 5) },
       { id: 'P-004', name: 'Hydraulic Frame', categoryId: 'cat-001', quantity: 42, binId: 'BIN-001', status: 'Low Stock', lastUpdated: hoursAgo(0, 44) },
-      { id: 'P-005', name: 'Drive Coupling', categoryId: 'cat-002', quantity: 310, binId: 'BIN-004', status: 'In Stock', lastUpdated: hoursAgo(2, 10) },
-      { id: 'P-006', name: 'Mast Bracket', categoryId: 'cat-001', quantity: 18, binId: 'BIN-005', status: 'Low Stock', lastUpdated: hoursAgo(0, 8) },
-      { id: 'P-007', name: 'Counterweight Plate', categoryId: 'cat-001', quantity: 0, binId: 'BIN-003', status: 'Out of Stock', lastUpdated: hoursAgo(3, 20) },
+      { id: 'P-005', name: 'Drive Coupling', categoryId: 'cat-002', quantity: 310, binId: 'BIN-002', status: 'In Stock', lastUpdated: hoursAgo(2, 10) },
+      { id: 'P-006', name: 'Mast Bracket', categoryId: 'cat-001', quantity: 18, binId: 'BIN-001', status: 'Low Stock', lastUpdated: hoursAgo(0, 8) },
+      { id: 'P-007', name: 'Counterweight Plate', categoryId: 'cat-001', quantity: 0, binId: 'BIN-002', status: 'Out of Stock', lastUpdated: hoursAgo(3, 20) },
       { id: 'P-008', name: 'Fork Carriage', categoryId: 'cat-002', quantity: 64, binId: 'BIN-002', status: 'Reserved', lastUpdated: hoursAgo(0, 16) },
-      { id: 'P-009', name: 'Tilt Cylinder', categoryId: 'cat-001', quantity: 96, binId: 'BIN-004', status: 'In Stock', lastUpdated: hoursAgo(1, 40) },
-      { id: 'P-010', name: 'Load Backrest', categoryId: 'cat-002', quantity: 128, binId: 'BIN-005', status: 'In Stock', lastUpdated: hoursAgo(0, 55) },
+      { id: 'P-009', name: 'Tilt Cylinder', categoryId: 'cat-001', quantity: 96, binId: 'BIN-002', status: 'In Stock', lastUpdated: hoursAgo(1, 40) },
+      { id: 'P-010', name: 'Load Backrest', categoryId: 'cat-002', quantity: 128, binId: 'BIN-001', status: 'In Stock', lastUpdated: hoursAgo(0, 55) },
     ]);
   }
 
   if ((await Forklift.countDocuments()) === 0) {
     await Forklift.insertMany([
-      { id: 'FLT-001', name: 'Machine 1', model: 'Hyster H2.5FT', capacity: '2.5 Ton', status: 'Active', operator: 'John Doe', battery: 82, location: 'Bin 3', lastActive: hoursAgo(0, 2) },
+      { id: 'FLT-001', name: 'Machine 1', model: 'Hyster H2.5FT', capacity: '2.5 Ton', status: 'Active', operator: 'John Doe', battery: 82, location: 'Bin 1', lastActive: hoursAgo(0, 2) },
       { id: 'FLT-002', name: 'Machine 2', model: 'Toyota 8FGCU25', capacity: '2.0 Ton', status: 'Idle', operator: 'Sarah Smith', battery: 64, location: 'Bin 1', lastActive: hoursAgo(0, 18) },
       { id: 'FLT-003', name: 'Machine 3', model: 'Crown C-5', capacity: '1.8 Ton', status: 'Maintenance', operator: 'Unassigned', battery: 41, location: 'Service Bay', lastActive: hoursAgo(4, 12) },
     ]);
@@ -106,10 +112,10 @@ async function seedWarehouse() {
 
   if ((await ActivityEvent.countDocuments()) === 0) {
     await ActivityEvent.insertMany([
-      { id: 'evt-001', time: '09:42', timestamp: Date.now() - 2 * 60_000, type: 'forklift', message: 'Machine 1 moved to Bin 3' },
+      { id: 'evt-001', time: '09:42', timestamp: Date.now() - 2 * 60_000, type: 'forklift', message: 'Machine 1 moved to Bin 1' },
       { id: 'evt-002', time: '09:38', timestamp: Date.now() - 6 * 60_000, type: 'product', message: 'Product P-104 added to Bin 2' },
       { id: 'evt-003', time: '09:31', timestamp: Date.now() - 13 * 60_000, type: 'user', message: 'John Doe logged in' },
-      { id: 'evt-004', time: '09:25', timestamp: Date.now() - 19 * 60_000, type: 'inventory', message: 'Bin 4 inventory updated' },
+      { id: 'evt-004', time: '09:25', timestamp: Date.now() - 19 * 60_000, type: 'inventory', message: 'Bin 2 inventory updated' },
       { id: 'evt-005', time: '09:12', timestamp: Date.now() - 32 * 60_000, type: 'bin', message: 'Bin 1 capacity recalculated' },
       { id: 'evt-006', time: '08:58', timestamp: Date.now() - 46 * 60_000, type: 'forklift', message: 'Machine 2 returned to idle at Bin 1' },
     ]);
@@ -152,7 +158,7 @@ async function seedAdmin() {
 }
 
 async function seedExcelProducts() {
-  const bins = ['BIN-001', 'BIN-002', 'BIN-003', 'BIN-004', 'BIN-005'];
+  const bins = ['BIN-001', 'BIN-002'];
   const rows = await ExcelCatalog.find();
   for (const [index, row] of rows.entries()) {
     const id = `P-${row.productRef}`;

@@ -16,7 +16,6 @@ import { Scanner } from './pages/Scanner';
 import { Settings } from './pages/Settings';
 import { UsersPage } from './pages/Users';
 import { UwbMappingPage } from './pages/UwbMapping';
-import { UwbTablePage } from './pages/UwbTable';
 
 function Providers({ children }: { children: ReactNode }) {
   return (
@@ -44,7 +43,7 @@ export default function App() {
               <Route path="/bins" element={<Bins />} />
               <Route path="/forklifts" element={<Forklifts />} />
               <Route path="/uwb" element={<UwbMappingPage />} />
-              <Route path="/uwb/table" element={<UwbTablePage />} />
+              <Route path="/uwb/table" element={<Navigate to="/uwb" replace />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/inventory" element={<Navigate to="/" replace />} />
               <Route path="/scanner" element={<Scanner />} />

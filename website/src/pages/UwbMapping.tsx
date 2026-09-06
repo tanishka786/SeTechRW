@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { RefreshCw, Table2 } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { useUwbMapping } from '../hooks/useUwbMapping';
-import { UwbFloorMap } from '../components/uwb/UwbFloorMap';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { ErrorState } from '../components/ui/LoadingState';
 import { StatCard } from '../components/ui/StatCard';
 import { useToast } from '../context/ToastContext';
 import { ApiError } from '../api/client';
+import { UwbDistanceTable } from './UwbTable';
 
 export function UwbMappingPage() {
   const { pushToast } = useToast();
@@ -91,27 +90,14 @@ export function UwbMappingPage() {
         />
       </div>
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">Floor map</h3>
-            <p className="mt-0.5 text-xs text-slate-500">
-              The forklift tag moves on this map as live UWB distance updates. Dashed line is the nearest bin path.
-            </p>
-          </div>
-          <Link to="/uwb/table">
-            <Button variant="outline" size="sm" icon={<Table2 size={14} />}>
-              Mapping table
-            </Button>
-          </Link>
+      <section className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900">Mapping table</h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            The two most recently updated rows stay at the top and are highlighted.
+          </p>
         </div>
-        <div className="mt-4">
-          {data ? (
-            <UwbFloorMap devices={data.devices} mappings={data.mappings} selectedForkliftId="all" />
-          ) : (
-            <div className="h-64 animate-pulse rounded-xl bg-slate-100" />
-          )}
-        </div>
+        <UwbDistanceTable />
       </section>
     </div>
   );

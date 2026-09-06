@@ -6,10 +6,10 @@ import { Product } from '../models/Product';
 import { Settings } from '../models/Settings';
 
 const EVENT_POOL = [
-  { type: 'forklift' as const, message: 'Machine 1 moved to Bin 3' },
+  { type: 'forklift' as const, message: 'Machine 1 moved to Bin 1' },
   { type: 'forklift' as const, message: 'Machine 2 completed pick at Bin 1' },
   { type: 'product' as const, message: 'Product P-001 restocked in Bin 1' },
-  { type: 'inventory' as const, message: 'Bin 4 inventory updated' },
+  { type: 'inventory' as const, message: 'Bin 2 inventory updated' },
   { type: 'bin' as const, message: 'Bin 2 utilization recalculated' },
   { type: 'scan' as const, message: 'QR label from Print queue verified' },
 ];

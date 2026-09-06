@@ -112,9 +112,6 @@ const SECONDARIES = [
 const PRIMARY_LAYOUT: Record<string, { x: number; y: number; relayIds: string[] }> = {
   'BIN-001': { x: 4, y: 8, relayIds: ['ANC-S-A'] },
   'BIN-002': { x: 12, y: 8, relayIds: ['ANC-S-A'] },
-  'BIN-003': { x: 4, y: 22, relayIds: ['ANC-S-B'] },
-  'BIN-004': { x: 12, y: 22, relayIds: ['ANC-S-B'] },
-  'BIN-005': { x: 28, y: 14, relayIds: [] },
 };
 
 export async function ensureUwbTopology(force = false) {
@@ -178,6 +175,15 @@ export async function ensureUwbTopology(force = false) {
       },
       { upsert: true, setDefaultsOnInsert: true },
     );
+  }
+
+  const keepBinIds = bins.map((bin) => bin.id);
+  const extraPrimaries = await UwbDevice.find({ role: 'primary', binId: { $nin: keepBinIds } }).lean();
+  if (extraPrimaries.length > 0) {
+    const extraIds = extraPrimaries.map((device) => device.id);
+    await UwbDevice.deleteMany({ id: { $in: extraIds } });
+    await UwbRange.deleteMany({ $or: [{ fromId: { $in: extraIds } }, { toId: { $in: extraIds } }] });
+    await UwbDistance.deleteMany({ primaryId: { $in: extraIds } });
   }
 
   const forklifts = await Forklift.find().sort({ id: 1 }).lean();

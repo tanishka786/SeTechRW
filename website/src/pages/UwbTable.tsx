@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Eye, Map as MapIcon, Radio } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Eye, Radio } from 'lucide-react';
 import { ApiError } from '../api/client';
 import { HopPath } from '../components/uwb/HopPath';
 import { Badge, statusVariant } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { DataTable } from '../components/ui/DataTable';
 import { EmptyState } from '../components/ui/EmptyState';
-import { ErrorState } from '../components/ui/LoadingState';
 import { Modal } from '../components/ui/Modal';
 import { SearchBar } from '../components/ui/SearchBar';
 import { Select } from '../components/ui/Select';
@@ -16,6 +14,10 @@ import { useUwbMapping } from '../hooks/useUwbMapping';
 import type { UwbMapping } from '../types';
 import { relativeUpdated } from '../utils/formatters';
 import { formatBinId, formatMachineId, matchesSearch } from '../utils/validation';
+
+function rowKey(row: UwbMapping) {
+  return `${row.tagId}-${row.primaryId}`;
+}
 
 function DistanceField({
   row,
@@ -87,9 +89,9 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
   );
 }
 
-export function UwbTablePage() {
+export function UwbDistanceTable() {
   const { pushToast } = useToast();
-  const { data, error, saveDistance } = useUwbMapping();
+  const { data, saveDistance } = useUwbMapping();
   const [query, setQuery] = useState('');
   const [forkliftId, setForkliftId] = useState('all');
   const [details, setDetails] = useState<UwbMapping | null>(null);
@@ -102,29 +104,35 @@ export function UwbTablePage() {
     return [{ value: 'all', label: 'All forklifts' }, ...[...names].map(([value, label]) => ({ value, label }))];
   }, [data]);
 
+  const recentKeys = useMemo(() => {
+    return new Set(
+      [...(data?.mappings ?? [])]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, 2)
+        .map(rowKey),
+    );
+  }, [data]);
+
   const rows = useMemo(() => {
     const list = (data?.mappings ?? []).filter((row) => {
       const matchesMachine = forkliftId === 'all' || row.forkliftId === forkliftId;
       const hay = `${formatMachineId(row.forkliftId)} ${row.forkliftId} ${row.tagName} ${formatBinId(row.binId)} ${row.binId} ${row.primaryName} ${row.chipId}`;
       return matchesMachine && matchesSearch(hay, query);
     });
-    const liveCutoff = Date.now() - 20_000;
     const idNumber = (value: string) => {
       const match = value.match(/(\d+)/);
       return match ? Number(match[1]) : 0;
     };
-    const isLive = (row: UwbMapping) =>
-      row.hops.some((hop) => hop.source === 'dwm3001c') && new Date(row.updatedAt).getTime() >= liveCutoff;
     return [...list].sort((a, b) => {
-      const aLive = isLive(a);
-      const bLive = isLive(b);
-      if (aLive !== bLive) return aLive ? -1 : 1;
-      if (aLive && bLive) return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      const aRecent = recentKeys.has(rowKey(a));
+      const bRecent = recentKeys.has(rowKey(b));
+      if (aRecent !== bRecent) return aRecent ? -1 : 1;
+      if (aRecent && bRecent) return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       const byMachine = idNumber(a.forkliftId) - idNumber(b.forkliftId);
       if (byMachine !== 0) return byMachine;
       return idNumber(a.binId) - idNumber(b.binId);
     });
-  }, [data, forkliftId, query]);
+  }, [data, forkliftId, query, recentKeys]);
 
   const onSave = async (row: UwbMapping, distanceM: number) => {
     try {
@@ -139,18 +147,7 @@ export function UwbTablePage() {
   };
 
   return (
-    <div className="space-y-6">
-      {error ? <ErrorState title="UWB mapping unavailable" message={error} /> : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">Search machines and review live distances. Ten rows at a time.</p>
-        <Link to="/uwb">
-          <Button variant="outline" size="sm" icon={<MapIcon size={14} />}>
-            Floor map
-          </Button>
-        </Link>
-      </div>
-
+    <div className="space-y-4">
       <div className="flex flex-row items-center gap-2 sm:gap-3">
         <SearchBar value={query} onChange={setQuery} placeholder="Search forklift, tag, or bin" />
         <div className="w-36 shrink-0 sm:w-56">
@@ -161,10 +158,10 @@ export function UwbTablePage() {
       <DataTable
         rows={rows}
         resetKey={`${query}-${forkliftId}`}
-        rowKey={(row) => `${row.tagId}-${row.primaryId}`}
+        rowKey={rowKey}
         rowClassName={(row) =>
-          row.hops.some((hop) => hop.source === 'dwm3001c') && Date.now() - new Date(row.updatedAt).getTime() < 20_000
-            ? 'bg-brand-yellow/25'
+          recentKeys.has(rowKey(row))
+            ? 'bg-brand-orange/15 shadow-[inset_3px_0_0_0_#f68529]'
             : undefined
         }
         empty={<EmptyState icon={<Radio />} title="No mappings" description="Add forklifts and bins to see UWB distances." />}
@@ -178,7 +175,12 @@ export function UwbTablePage() {
           {
             key: 'forklift',
             header: 'Forklift',
-            render: (row) => formatMachineId(row.forkliftId),
+            render: (row) => (
+              <span className="inline-flex items-center gap-2">
+                {formatMachineId(row.forkliftId)}
+                {recentKeys.has(rowKey(row)) ? <Badge variant="success">Recent</Badge> : null}
+              </span>
+            ),
           },
           { key: 'tagName', header: 'Tag' },
           {

@@ -8,7 +8,6 @@ const titles: Record<string, string> = {
   '/bins': 'Bins',
   '/forklifts': 'Forklifts',
   '/uwb': 'UWB Mapping',
-  '/uwb/table': 'UWB Table',
   '/users': 'User Login Activity',
   '/scanner': 'Barcode & QR Scanner',
   '/scan-history': 'Scan History',

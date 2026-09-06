@@ -283,7 +283,7 @@ export function ScanJourney({
         />
         <Input
           label="Or enter bin manually"
-          placeholder="Bin 4"
+          placeholder="Bin 1"
           value={manualBin}
           onChange={(e) => setManualBin(e.target.value)}
           hint="Used only if UWB detection is unavailable."
