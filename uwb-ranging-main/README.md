@@ -74,12 +74,13 @@ python uci_uart_fira_test.py -p <COMX> -a 00:00 -t <XX:XX> [--controlee]
         Other laptop (primary / Bin 1): python start_chip.py --role bin1 --case C
         This PC (tag): python start_chip.py --role tag --case C --bin 1
 
-    Two-bin placement (3 laptops):
+    Two-bin placement (all chips on this PC, or one chip per laptop):
         On UWB Mapping (/uwb) select Case C · Direct, then click Restart two-bin test.
-        Bin 1 laptop: python start_chip.py --role bin1 --case C
-        Bin 2 laptop: python start_chip.py --role bin2 --case C
-        Tag laptop:   python start_chip.py --role tag --case C --scan-bins
-        Scan a QR, walk the tag laptop next to Bin 1 or Bin 2, click End journey.
+        Set COM ports in new_python_script/chips.json, then open three terminals:
+        Bin 1: python start_chip.py --role bin1 --case C
+        Bin 2: python start_chip.py --role bin2 --case C
+        Tag:   python start_chip.py --role tag --case C --scan-bins
+        Scan a QR, move the tag chip next to Bin 1 or Bin 2, click End journey.
         The API keeps the latest live distance to each bin and places the product in the nearer one.
 
     Case A hop 1 — Machine 1 ↔ secondary

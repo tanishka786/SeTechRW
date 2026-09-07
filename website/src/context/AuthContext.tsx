@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AppUser, LoginMethod } from '../types';
 import { loginRequest, logoutRequest, meRequest, resendOtpRequest, signupRequest, verifyOtpRequest } from '../api/auth';
 import { ApiError, getToken, setToken } from '../api/client';
+import { clearOpenScanSession } from '../components/scanner/openScanSession';
 import { useToast } from './ToastContext';
 
 export interface PendingVerification {
@@ -132,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await logoutRequest();
     setCurrentUser(null);
     savePending(null);
+    clearOpenScanSession();
     pushToast('info', 'Logged out');
     navigate('/login');
   }, [navigate, pushToast]);

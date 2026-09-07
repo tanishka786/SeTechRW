@@ -2,10 +2,10 @@
   "apiUrl": "http://127.0.0.1:5000",
   "ingestKey": "forklift-uwb-test",
   "chips": {
-    "tag": { "port": "COM12", "mac": "00:00" },
-    "primary": { "port": "COM4", "mac": "00:01" },
-    "bin1": { "port": "COM4", "mac": "00:01" },
-    "secondary": { "port": "COM10", "mac": "00:02" },
-    "bin2": { "port": "COM10", "mac": "00:02" }
+    "tag": { "port": "COM9", "mac": "00:00" },
+    "primary": { "port": "COM10", "mac": "00:01" },
+    "bin1": { "port": "COM10", "mac": "00:01" },
+    "secondary": { "port": "COM8", "mac": "00:02" },
+    "bin2": { "port": "COM8", "mac": "00:02" }
   }
 }

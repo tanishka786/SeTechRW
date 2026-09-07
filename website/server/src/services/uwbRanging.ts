@@ -7,7 +7,6 @@ import { UwbRange } from '../models/UwbRange';
 
 const CHIP = 'Qorvo DWM3001C';
 const CHIP_STALE_MS = 20_000;
-const FLOOR = { minX: 1, maxX: 31, minY: 1, maxY: 27 };
 
 export const TEST_FORKLIFT_ID = 'FLT-001';
 export const TEST_BIN_ID = 'BIN-001';
@@ -27,10 +26,6 @@ export function pairKey(a: string, b: string) {
 
 export function mappingKey(tagId: string, primaryId: string) {
   return `${tagId}::${primaryId}`;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 
 async function applyTestChipMacs() {
@@ -227,22 +222,17 @@ function euclidean(a: { x: number; y: number }, b: { x: number; y: number }) {
 
 async function upsertDummyRange(fromId: string, toId: string, distanceM: number) {
   const existing = await UwbRange.findOne({ pairKey: pairKey(fromId, toId) });
-  if (
-    existing?.source === 'dwm3001c' &&
-    existing.measuredAt &&
-    Date.now() - existing.measuredAt.getTime() < CHIP_STALE_MS
-  ) {
+  if (existing) {
     return;
   }
-  const noiseM = (Math.random() - 0.5) * 0.12;
   await UwbRange.findOneAndUpdate(
     { pairKey: pairKey(fromId, toId) },
     {
       pairKey: pairKey(fromId, toId),
       fromId,
       toId,
-      distanceMm: Math.max(50, metersToMm(distanceM + noiseM)),
-      quality: 88 + Math.round(Math.random() * 10),
+      distanceMm: Math.max(50, metersToMm(distanceM)),
+      quality: 95,
       source: 'dummy',
       measuredAt: new Date(),
     },
@@ -253,17 +243,18 @@ async function upsertDummyRange(fromId: string, toId: string, distanceM: number)
 function neededPairs(tags: Array<{ id: string }>, primaries: Array<{ id: string; relayIds: string[] }>) {
   const pairs = new Set<string>();
   const list: Array<[string, string]> = [];
+  const add = (a: string, b: string) => {
+    const key = pairKey(a, b);
+    if (pairs.has(key)) return;
+    pairs.add(key);
+    list.push([a, b]);
+  };
   for (const tag of tags) {
     for (const primary of primaries) {
+      add(tag.id, primary.id);
       const chain = [tag.id, ...primary.relayIds, primary.id];
       for (let i = 0; i < chain.length - 1; i++) {
-        const a = chain[i];
-        const b = chain[i + 1];
-        const key = pairKey(a, b);
-        if (!pairs.has(key)) {
-          pairs.add(key);
-          list.push([a, b]);
-        }
+        add(chain[i], chain[i + 1]);
       }
     }
   }
@@ -272,34 +263,8 @@ function neededPairs(tags: Array<{ id: string }>, primaries: Array<{ id: string;
 
 export async function tickDummyUwb() {
   await ensureUwbTopology();
-  const [devices, forklifts, bins] = await Promise.all([
-    UwbDevice.find(),
-    Forklift.find().lean(),
-    Bin.find().lean(),
-  ]);
+  const devices = await UwbDevice.find();
   const byId = new Map(devices.map((d) => [d.id, d]));
-
-  for (const tag of devices.filter((d) => d.role === 'tag')) {
-    const machine = forklifts.find((f) => f.id === tag.forkliftId);
-    if (!machine || machine.status === 'Offline' || machine.status === 'Maintenance') {
-      tag.x = clamp(tag.x + (Math.random() - 0.5) * 0.15, FLOOR.minX, FLOOR.maxX);
-      tag.y = clamp(tag.y + (Math.random() - 0.5) * 0.15, FLOOR.minY, FLOOR.maxY);
-    } else {
-      const bin =
-        bins.find((b) => b.name === machine.location || b.id === machine.location) ??
-        bins.find((b) => machine.location?.includes(b.name));
-      const primary = devices.find((d) => d.role === 'primary' && d.binId === bin?.id);
-      const targetX = primary ? primary.x + 1.4 : tag.x;
-      const targetY = primary ? primary.y + (machine.status === 'Active' ? 1.2 : 0.4) : tag.y;
-      const step = machine.status === 'Active' ? 0.55 : 0.18;
-      tag.x = clamp(tag.x + (targetX - tag.x) * 0.22 + (Math.random() - 0.5) * step, FLOOR.minX, FLOOR.maxX);
-      tag.y = clamp(tag.y + (targetY - tag.y) * 0.22 + (Math.random() - 0.5) * step, FLOOR.minY, FLOOR.maxY);
-    }
-    tag.location = machine?.location ?? tag.location;
-    tag.online = machine?.status !== 'Offline';
-    await tag.save();
-  }
-
   const tags = devices.filter((d) => d.role === 'tag');
   const primaries = devices.filter((d) => d.role === 'primary');
   for (const [fromId, toId] of neededPairs(tags, primaries)) {
@@ -553,7 +518,7 @@ export async function getUwbMapping() {
         hopCount: Math.max(0, chain.length - 2),
         isNearest: false,
         status: override !== undefined || !missing ? 'ok' : 'no-signal',
-        updatedAt: latest ? new Date(latest).toISOString() : new Date().toISOString(),
+        updatedAt: latest ? new Date(latest).toISOString() : '1970-01-01T00:00:00.000Z',
       });
     }
   }
@@ -601,11 +566,5 @@ export async function getUwbMapping() {
 }
 
 export function startDummyUwb() {
-  const kick = () => {
-    tickDummyUwb().catch((err) => console.error('UWB dummy tick failed', err));
-  };
-  kick();
-  const timer = setInterval(kick, 2500);
-  timer.unref?.();
-  return timer;
+  tickDummyUwb().catch((err) => console.error('UWB dummy seed failed', err));
 }

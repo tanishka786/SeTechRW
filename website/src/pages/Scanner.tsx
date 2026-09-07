@@ -6,6 +6,7 @@ import { CameraScanner } from '../components/scanner/CameraScanner';
 import { ManualCodeForm } from '../components/scanner/ManualCodeForm';
 import { ScanJourney, type ScanJourneyState } from '../components/scanner/ScanJourney';
 import { ScanResultCard } from '../components/scanner/ScanResultCard';
+import { readOpenScanSession, writeOpenScanSession } from '../components/scanner/openScanSession';
 import { ErrorState } from '../components/ui/LoadingState';
 import { useToast } from '../context/ToastContext';
 import { ApiError } from '../api/client';
@@ -35,12 +36,13 @@ export function Scanner() {
   const warehouse = useWarehouse();
   const [searchParams, setSearchParams] = useSearchParams();
   const replayed = useRef('');
-  const [result, setResult] = useState<LookupResult | null>(null);
-  const [lastCode, setLastCode] = useState('');
-  const [lastType, setLastType] = useState<ScanRow['codeType']>('Manual');
+  const restored = useRef(readOpenScanSession());
+  const [result, setResult] = useState<LookupResult | null>(restored.current?.result ?? null);
+  const [lastCode, setLastCode] = useState(restored.current?.lastCode ?? '');
+  const [lastType, setLastType] = useState<ScanRow['codeType']>(restored.current?.lastType ?? 'Manual');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [journey, setJourney] = useState<ScanJourneyState | null>(null);
+  const [journey, setJourney] = useState<ScanJourneyState | null>(restored.current?.journey ?? null);
 
   const lookup = async (code: string, codeType: ScanRow['codeType']) => {
     const trimmed = code.trim();
@@ -53,18 +55,24 @@ export function Scanner() {
     setLastType(codeType);
     try {
       const data = await lookupCodeRequest(trimmed, codeType);
-      setResult(data);
       if (data.found) {
         beep();
         pushToast('success', `Matched ${data.matchedItem || trimmed}`);
-        setJourney({
+        const nextJourney: ScanJourneyState = {
           scanId: data.scan?.id,
           itemName: data.matchedItem || data.catalog?.productName || trimmed,
           requiredKg: requiredWeightKg(data.catalog?.quantity ?? data.product?.quantity),
           productId: data.product?.id ?? null,
+        };
+        setResult(data);
+        setJourney(nextJourney);
+        writeOpenScanSession({
+          journey: nextJourney,
+          result: data,
+          lastCode: trimmed,
+          lastType: codeType,
         });
       } else {
-        setJourney(null);
         pushToast('error', data.error ?? 'No matching record found for this barcode / QR code.');
       }
       if (data.scanStats) warehouse.applyScanStats(data.scanStats);
@@ -136,7 +144,13 @@ export function Scanner() {
           </div>
           {journey ? (
             <div className="min-h-0 flex-1">
-              <ScanJourney journey={journey} onEnded={() => setJourney(null)} />
+              <ScanJourney
+                journey={journey}
+                onEnded={() => {
+                  setJourney(null);
+                  writeOpenScanSession(null);
+                }}
+              />
             </div>
           ) : null}
         </div>

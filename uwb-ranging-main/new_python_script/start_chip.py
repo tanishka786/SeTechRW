@@ -6,11 +6,11 @@ other laptops. The tag posts distances: if the tag runs on the warehouse PC
 use http://127.0.0.1:5000. If the tag runs on another laptop, use that PC's
 current IPv4, e.g. http://192.168.68.107:5000
 
-Two-bin placement test (tag laptop vs Bin 1 laptop vs Bin 2 laptop):
-  Bin 1 laptop:  python start_chip.py --role bin1 --case C
-  Bin 2 laptop:  python start_chip.py --role bin2 --case C
-  Tag laptop:    python start_chip.py --role tag --case C --scan-bins
-Then scan a product, walk the tag laptop next to Bin 1 or Bin 2, click End journey.
+Two-bin placement test (all three chips on this PC, or one chip per laptop):
+  Terminal 1:  python start_chip.py --role bin1 --case C
+  Terminal 2:  python start_chip.py --role bin2 --case C
+  Terminal 3:  python start_chip.py --role tag --case C --scan-bins
+Then scan a product, move the tag chip next to Bin 1 or Bin 2, click End journey.
 
 Target one bin only:
   Tag: python start_chip.py --role tag --case C --bin 1
@@ -72,6 +72,14 @@ def dest_role_for_bin(bin_no: int) -> str:
     return "bin1" if bin_no == 1 else "bin2"
 
 
+def bin_no_for_role(role: str, requested: int) -> int:
+    if role == "bin2":
+        return 2
+    if role in ("bin1", "primary"):
+        return 1
+    return requested
+
+
 def norm_mac(value: str) -> str:
     hex_only = re.sub(r"[^0-9A-Fa-f]", "", value or "")
     if len(hex_only) >= 4:
@@ -90,22 +98,21 @@ def same_mac(left: str, right: str) -> bool:
 
 
 _post_lock = threading.Lock()
-_last_post_at = 0.0
-_post_inflight = False
+_last_post_at: dict[str, float] = {}
+POST_INTERVAL_S = 1.0
+POST_OK_STATUS = {"Ok", "RangingNegativeDistance"}
 
 
 def post_range(api_url: str, ingest_key: str, from_role: str, to_role: str, distance_cm: float):
-    global _last_post_at, _post_inflight
-    distance_m = round(distance_cm / 100.0, 3)
+    distance_m = round(max(distance_cm, 0.0) / 100.0, 3)
     now = time.time()
+    key = f"{from_role}->{to_role}"
     with _post_lock:
-        if _post_inflight or now - _last_post_at < 0.8:
+        if now - _last_post_at.get(key, 0.0) < POST_INTERVAL_S:
             return
-        _post_inflight = True
-        _last_post_at = now
+        _last_post_at[key] = now
 
     def worker():
-        global _post_inflight
         body = json.dumps(
             {
                 "fromRole": from_role,
@@ -129,9 +136,6 @@ def post_range(api_url: str, ingest_key: str, from_role: str, to_role: str, dist
             print(f"Posted {from_role} -> {to_role}: {distance_m:.3f} m")
         except urllib.error.URLError as exc:
             print(f"API post failed: {exc} ({api_url})", file=sys.stderr)
-        finally:
-            with _post_lock:
-                _post_inflight = False
 
     threading.Thread(target=worker, daemon=True).start()
 
@@ -158,8 +162,26 @@ def peers_for(role: str, test_case: str, hop: int, bin_no: int) -> tuple[bool, s
 
 def session_id(test_case: str, hop: int, bin_no: int) -> str:
     if test_case == "C":
-        return "42" if bin_no == 1 else "43"
+        return "42"
     return "50" if hop == 1 else "51"
+
+
+def fira_mac(value: str) -> int:
+    parts = norm_mac(value).split(":")
+    if len(parts) >= 2:
+        return int(parts[-1] + parts[-2], 16)
+    return int(re.sub(r"[^0-9A-Fa-f]", "", value) or "0", 16)
+
+
+def role_for_mac(mac: str, chips: dict) -> str | None:
+    for role, chip in chips.items():
+        if same_mac(mac, chip.get("mac", "")):
+            if role == "primary":
+                return "bin1"
+            if role == "secondary":
+                return "bin2"
+            return role
+    return None
 
 
 def clear_old_sessions(port: str) -> None:
@@ -189,10 +211,24 @@ def clear_old_sessions(port: str) -> None:
             time.sleep(0.6)
 
 
+TWO_BIN_TIMING_ARGS = [
+    "--node",
+    "onetomany",
+    "--slots-per-rr",
+    "16",
+    "--ranging-span",
+    "240",
+    "--hopping-mode",
+    "disabled",
+]
+TWO_BIN_CONTROLLER_ARGS = [*TWO_BIN_TIMING_ARGS, "--n_controlees", "2"]
+TWO_BIN_CONTROLEE_ARGS = [*TWO_BIN_TIMING_ARGS, "--n_controlees", "1"]
+
+
 def run_ranging(
     port: str,
     local_mac: str,
-    dest_mac: str,
+    dest_mac: str | list[str],
     sid: str,
     controlee: bool,
     duration: str,
@@ -200,7 +236,11 @@ def run_ranging(
     to_role: str,
     api_url: str,
     ingest_key: str,
+    chips: dict | None = None,
+    extra_args: list[str] | None = None,
 ) -> None:
+    dest_list = dest_mac if isinstance(dest_mac, list) else [dest_mac]
+    dest_arg = dest_list[0] if len(dest_list) == 1 else "[" + ",".join(hex(fira_mac(mac)) for mac in dest_list) + "]"
     cmd = [
         sys.executable,
         str(SCRIPT),
@@ -211,9 +251,10 @@ def run_ranging(
         "--mac",
         local_mac,
         "--dest-mac",
-        dest_mac,
+        dest_arg,
         "--session",
         sid,
+        *(extra_args or []),
     ]
     if controlee:
         cmd.append("--controlee")
@@ -222,9 +263,9 @@ def run_ranging(
     print(f"Role        : {from_role} ({'controlee' if controlee else 'initiator'})")
     print(f"Session     : {sid}")
     print(f"Port        : {port}")
-    print(f"MAC         : {local_mac} -> {dest_mac} ({to_role})")
+    print(f"MAC         : {local_mac} -> {', '.join(dest_list)}")
     print(f"API         : {api_url}")
-    print("Distance    : posted in meters (cm / 100)")
+    print("Distance    : posted once per second per bin")
     print("=" * 60)
 
     process = subprocess.Popen(
@@ -236,7 +277,7 @@ def run_ranging(
         bufsize=1,
     )
     last_status = None
-    last_mac = dest_mac
+    last_mac = dest_list[0]
     try:
         assert process.stdout is not None
         for line in process.stdout:
@@ -251,10 +292,16 @@ def run_ranging(
             if not distance_match or controlee:
                 continue
             distance_cm = float(distance_match.group(1))
-            if last_status != "Ok" or distance_cm >= 65535:
+            if last_status not in POST_OK_STATUS or distance_cm >= 65535:
                 continue
             peer = to_role
-            if not same_mac(last_mac, dest_mac):
+            if chips:
+                matched = role_for_mac(last_mac, chips)
+                if matched:
+                    peer = matched
+                elif not any(same_mac(last_mac, mac) for mac in dest_list):
+                    continue
+            elif not same_mac(last_mac, dest_list[0]):
                 continue
             post_range(api_url, ingest_key, from_role, peer, distance_cm)
     except KeyboardInterrupt:
@@ -277,7 +324,7 @@ def main():
     parser.add_argument("--case", default="C", choices=["A", "C"], help="A = hop, C = direct")
     parser.add_argument("--hop", type=int, default=1, choices=[1, 2], help="Case A only: 1 = tag-secondary, 2 = secondary-primary")
     parser.add_argument("--bin", type=int, default=1, choices=[1, 2], help="Case C: range Tag <-> Bin 1 or Bin 2")
-    parser.add_argument("--scan-bins", action="store_true", help="Tag only: alternate ranging to Bin 1 and Bin 2")
+    parser.add_argument("--scan-bins", action="store_true", help="Tag only: range Bin 1 and Bin 2 together")
     parser.add_argument("--port", help="Override COM port from chips.json")
     parser.add_argument("--time", default="-1", help="Session duration seconds, -1 forever")
     args = parser.parse_args()
@@ -292,40 +339,41 @@ def main():
     api_url = config.get("apiUrl") or "http://127.0.0.1:5000"
     ingest_key = config.get("ingestKey") or "forklift-uwb-test"
     local_mac = chip["mac"]
+    bin_no = bin_no_for_role(args.role, args.bin)
 
     if args.scan_bins:
         if args.role != "tag" or args.case != "C":
             raise SystemExit("--scan-bins is for: python start_chip.py --role tag --case C --scan-bins")
-        print("Scanning Bin 1 and Bin 2 in turn. Walk the tag laptop to the nearer bin, then End journey.")
+        dest_macs = [chip_for("bin1", chips)["mac"], chip_for("bin2", chips)["mac"]]
+        print("Ranging Bin 1 and Bin 2 together. Move the tag chip to the nearer bin, then End journey.")
+        print("Start bin1 and bin2 first, then this tag command. Restart all three after this change.")
+        sid = session_id("C", 1, 1)
+        clear_old_sessions(port)
         try:
-            while True:
-                for bin_no in (1, 2):
-                    dest_role = dest_role_for_bin(bin_no)
-                    dest_mac = chip_for(dest_role, chips)["mac"]
-                    sid = session_id("C", 1, bin_no)
-                    clear_old_sessions(port)
-                    time.sleep(0.3)
-                    run_ranging(
-                        port,
-                        local_mac,
-                        dest_mac,
-                        sid,
-                        False,
-                        "6",
-                        "tag",
-                        dest_role,
-                        api_url,
-                        ingest_key,
-                    )
-                    time.sleep(0.4)
+            time.sleep(0.3)
+            run_ranging(
+                port,
+                local_mac,
+                dest_macs,
+                sid,
+                False,
+                args.time,
+                "tag",
+                "bin1",
+                api_url,
+                ingest_key,
+                chips=chips,
+                extra_args=TWO_BIN_CONTROLLER_ARGS,
+            )
         except KeyboardInterrupt:
             print("\nStopped bin scan.")
             clear_old_sessions(port)
             return
+        return
 
-    controlee, peer_role = peers_for(args.role, args.case, args.hop, args.bin)
+    controlee, peer_role = peers_for(args.role, args.case, args.hop, bin_no)
     dest_mac = chip_for(peer_role, chips)["mac"]
-    sid = session_id(args.case, args.hop, args.bin)
+    sid = session_id(args.case, args.hop, bin_no)
     from_role = "tag" if args.role == "tag" else args.role
     if args.role == "primary":
         from_role = "bin1"
@@ -333,6 +381,7 @@ def main():
     if args.case == "A" and args.hop == 1 and args.role == "tag":
         print("Start the secondary on the other laptop FIRST, then run this tag command.")
 
+    two_bin = args.case == "C" and args.role in ("bin1", "bin2", "primary")
     clear_old_sessions(port)
     try:
         time.sleep(0.3)
@@ -347,6 +396,8 @@ def main():
             peer_role,
             api_url,
             ingest_key,
+            chips=chips,
+            extra_args=TWO_BIN_CONTROLEE_ARGS if two_bin else None,
         )
     except KeyboardInterrupt:
         clear_old_sessions(port)

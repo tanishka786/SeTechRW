@@ -105,8 +105,14 @@ export function UwbDistanceTable() {
   }, [data]);
 
   const recentKeys = useMemo(() => {
+    const liveMs = 20_000;
     return new Set(
       [...(data?.mappings ?? [])]
+        .filter(
+          (row) =>
+            row.hops.some((hop) => hop.source === 'dwm3001c') &&
+            Date.now() - new Date(row.updatedAt).getTime() < liveMs,
+        )
         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
         .slice(0, 2)
         .map(rowKey),
