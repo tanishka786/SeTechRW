@@ -1,0 +1,24 @@
+Use the existing template.io app in this workspace (ralmp-template).
+Do not rebuild from scratch. Keep the current architecture: React + Vite + Tailwind + DaisyUI, AppShell layout, localStorage multi-project store, and accessibility (labels, keyboard, contrast, skip link).
+
+Goal: adapt template.io to the NEW product described in the attachments and brief below.
+
+What I am attaching / providing (use only what is present):
+1. Video walkthrough of the working product (or this chat’s video)
+2. Screenshots of every screen that must exist
+3. Brand kit: product name, logo file, fonts, primary/secondary/accent hex colours, light/dark preference
+4. Module list: which sidebar pages to keep, rename, add, or remove
+5. Data/domain: entity names, statuses, table columns, KPIs, sample rows (or “keep demo data but rename fields”)
+6. Roles: who uses it (admin, operator, viewer) and what they can do
+7. Special screens: TV/kiosk, label designer, reports, etc. — keep, change, or drop
+8. Language/locale and currency
+9. Must-not-change list (if any)
+
+How to implement:
+- Rename visible product copy to the new brand; keep “template.io” only if I say so.
+- Apply brand colours through the DaisyUI Color theme system (data-theme + CSS variables), not one-off hardcoded colours.
+- Match the attached UI: layout, tabs, empty states, and main actions.
+- If a screen is in the video/screenshots, it must work with demo data.
+- If I did not mention a feature, do not invent a large new module.
+- After changes, tell me what you changed and how to run/test it.
+
