@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Plus, Trash2, ScanLine, UserPlus } from 'lucide-react'
@@ -13,24 +13,34 @@ import OldGoldCalculator from '../../../components/invoices/OldGoldCalculator'
 import type { OldGoldDraft } from '../../../components/invoices/OldGoldCalculator'
 import toast from 'react-hot-toast'
 
-interface Props { onSuccess: (invoice: Invoice) => void }
+interface Props { onSuccess: (invoice: Invoice) => void; startWithExchange?: boolean; prefillTag?: string }
 
 interface FormData {
   invoiceType: InvoiceType; invoiceDate: string; customerId: string;
   oldGoldAmount: number; oldGoldWeight: number; isIGST: boolean; notes: string;
 }
 
-export default function CreateInvoiceForm({ onSuccess }: Props) {
+export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefillTag }: Props) {
   const [items, setItems] = useState<(CreateInvoiceItemRequest & {
     name?: string; price?: number; metalRate?: number; metal?: string; purity?: string
   })[]>([])
   const [payments, setPayments] = useState<CreatePaymentRequest[]>([])
-  const [oldGoldPieces, setOldGoldPieces] = useState<OldGoldDraft[]>([])
-  const [scanTag, setScanTag] = useState('')
+  const [oldGoldPieces, setOldGoldPieces] = useState<OldGoldDraft[]>(() => startWithExchange ? [{
+    description: '',
+    grossWeight: 0,
+    purityPercent: 91.6,
+    meltingLossPercent: 1,
+    buyingRatePerGram: 0,
+    fineWeight: 0,
+    payableWeight: 0,
+    creditAmount: 0,
+  }] : [])
+  const [scanTag, setScanTag] = useState(prefillTag ?? '')
   const [scanning, setScanning] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [newCustomer, setNewCustomer] = useState<{ name: string; phone: string } | null>(null)
+  const prefillDone = useRef(false)
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(customerSearch), 300)
@@ -75,24 +85,28 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
     sublabel: c.phone ?? c.email ?? '',
   })) ?? []
 
-  const handleScan = async () => {
-    if (!scanTag.trim()) return
+  const handleScan = async (raw?: string) => {
+    const tag = (raw ?? scanTag).trim()
+    if (!tag) return
     setScanning(true)
     try {
-      const r = await tagsApi.scan(scanTag.trim())
+      const r = await tagsApi.scan(tag)
       if (!r.jewelleryItemId) {
         toast.error('Tag is not mapped to an item yet')
       } else {
-        setItems(prev => [...prev, {
-          jewelleryItemId: r.jewelleryItemId!,
-          tagValue: r.matchedValue,
-          quantity: 1,
-          name: r.name,
-          price: r.sellingPrice,
-          metalRate: r.metalRate,
-          metal: r.metal,
-          purity: r.purity,
-        }])
+        setItems(prev => {
+          if (prev.some(i => i.tagValue === r.matchedValue || i.jewelleryItemId === r.jewelleryItemId)) return prev
+          return [...prev, {
+            jewelleryItemId: r.jewelleryItemId!,
+            tagValue: r.matchedValue,
+            quantity: 1,
+            name: r.name,
+            price: r.sellingPrice,
+            metalRate: r.metalRate,
+            metal: r.metal,
+            purity: r.purity,
+          }]
+        })
         setScanTag('')
       }
     } catch {
@@ -100,6 +114,14 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
     }
     setScanning(false)
   }
+
+  useEffect(() => {
+    if (!prefillTag || prefillDone.current) return
+    prefillDone.current = true
+    void handleScan(prefillTag)
+    // Auto-add the tag passed from RFID / barcode scan
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillTag])
 
   const itemTotal = items.reduce((s, i) => s + (i.price ?? 0) * i.quantity, 0)
   const payTotal = payments.reduce((s, p) => s + p.amount, 0)
@@ -172,10 +194,20 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
         </div>
       </div>
 
+      {startWithExchange && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Metal exchange — weigh old gold first, then scan the new jewellery to bill against the credit.
+        </div>
+      )}
+
+      {startWithExchange && (
+        <OldGoldCalculator items={oldGoldPieces} onChange={setOldGoldPieces} autoFocusFirst />
+      )}
+
       {/* Items */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="font-semibold text-sm text-gray-700">Items</p>
+          <p className="font-semibold text-sm text-gray-700">{startWithExchange ? 'New jewellery' : 'Items'}</p>
         </div>
 
         {/* Scan input */}
@@ -186,7 +218,7 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
             placeholder="Scan barcode / QR / EPC to add item…"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
-          <Button type="button" variant="outline" size="sm" onClick={handleScan} loading={scanning}><ScanLine size={15} /> Scan</Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => handleScan()} loading={scanning}><ScanLine size={15} /> Scan</Button>
         </div>
 
         {items.length > 0 ? (
@@ -217,7 +249,9 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
         )}
       </div>
 
-      <OldGoldCalculator items={oldGoldPieces} onChange={setOldGoldPieces} />
+      {!startWithExchange && (
+        <OldGoldCalculator items={oldGoldPieces} onChange={setOldGoldPieces} />
+      )}
 
       {/* Payments */}
       <div>

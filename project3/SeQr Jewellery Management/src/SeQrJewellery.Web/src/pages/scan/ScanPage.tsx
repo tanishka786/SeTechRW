@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { ScanLine, Tag, Printer, ShoppingBag, CheckCircle, AlertCircle } from 'lucide-react'
 import { tagsApi, printQueueApi } from '../../api'
@@ -9,6 +10,7 @@ import Button from '../../components/ui/Button'
 import toast from 'react-hot-toast'
 
 export default function ScanPage() {
+  const navigate = useNavigate()
   const [scanValue, setScanValue] = useState('')
   const [result, setResult] = useState<TagScanResult | null>(null)
   const [history, setHistory] = useState<TagScanResult[]>([])
@@ -51,8 +53,8 @@ export default function ScanPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Tag Scan & Lookup</h1>
-          <p className="text-sm text-gray-500">Scan barcode, QR code, or RFID EPC to look up jewellery items</p>
+          <h1 className="page-title">RFID Scan & Lookup</h1>
+          <p className="text-sm text-gray-500">Scan barcode, QR, or RFID EPC — then add the piece to a new invoice</p>
         </div>
       </div>
 
@@ -133,7 +135,11 @@ export default function ScanPage() {
                     <p className="text-3xl font-bold text-amber-700">{fmtCurrency(result.sellingPrice)}</p>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <Button className="w-full" size="lg">
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={() => navigate(`/invoices?new=1&tag=${encodeURIComponent(result.matchedValue)}`)}
+                    >
                       <ShoppingBag size={18} /> Add to Invoice
                     </Button>
                     <Button variant="outline" onClick={() => printMutation.mutate(result.jewelleryItemId!)} loading={printMutation.isPending}>

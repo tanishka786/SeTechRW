@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   TrendingUp, Package, Users, Wrench, Printer, IndianRupee,
-  ShoppingBag, ArrowRight, AlertCircle, PhoneCall, Scale
+  ShoppingBag, ArrowRight, AlertCircle, PhoneCall, Scale, ScanLine
 } from 'lucide-react'
 import { reportsApi, crmApi } from '../../api'
 import { useAuthStore } from '../../store/authStore'
@@ -10,12 +10,15 @@ import { fmtCurrency, fmtDate, fmtDateTime, fmtWeight, invoiceStatusColor, invoi
 import { ComposedChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import Spinner from '../../components/ui/Spinner'
 import Badge from '../../components/ui/Badge'
+import { AppModule, PermissionAction } from '../../types'
 
 const COLORS = ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#fde68a']
 
 export default function DashboardPage() {
-  const { tenant } = useAuthStore()
+  const { tenant, hasPermission } = useAuthStore()
   const sym = tenant?.currencySymbol ?? '₹'
+  const canInvoice = hasPermission(AppModule[AppModule.Invoices], PermissionAction.View)
+  const canScan = hasPermission(AppModule[AppModule.Scan], PermissionAction.View)
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -61,10 +64,50 @@ export default function DashboardPage() {
           <h1 className="page-title">Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">Welcome back! Here's what's happening today.</p>
         </div>
-        <Link to="/invoices?new=1" className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
-          <ShoppingBag size={16} /> New Sale
-        </Link>
+        {canInvoice && (
+          <Link to="/invoices?new=1" className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700">
+            <ShoppingBag size={16} /> New Sale
+          </Link>
+        )}
       </div>
+
+      {(canInvoice || canScan) && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {canInvoice && (
+            <Link to="/invoices?new=1" className="card p-4 flex items-start gap-3 hover:border-amber-300 hover:shadow-sm transition-all group">
+              <div className="w-11 h-11 rounded-xl bg-amber-600 text-white flex items-center justify-center shrink-0 group-hover:bg-amber-700">
+                <ShoppingBag size={20} />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">New Sale</p>
+                <p className="text-xs text-gray-500 mt-0.5">Scan jewellery and bill a customer</p>
+              </div>
+            </Link>
+          )}
+          {canInvoice && (
+            <Link to="/invoices?new=1&exchange=1" className="card p-4 flex items-start gap-3 hover:border-amber-300 hover:shadow-sm transition-all group">
+              <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 group-hover:bg-amber-200">
+                <Scale size={20} />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">Metal Exchange</p>
+                <p className="text-xs text-gray-500 mt-0.5">Old gold credit against new jewellery</p>
+              </div>
+            </Link>
+          )}
+          {canScan && (
+            <Link to="/scan" className="card p-4 flex items-start gap-3 hover:border-amber-300 hover:shadow-sm transition-all group">
+              <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 group-hover:bg-slate-200">
+                <ScanLine size={20} />
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">RFID Scan</p>
+                <p className="text-xs text-gray-500 mt-0.5">Lookup barcode, QR, or RFID EPC</p>
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

@@ -11,7 +11,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', module: AppModule.Dashboard },
   { to: '/inventory', icon: Package, label: 'Inventory', module: AppModule.Inventory },
   { to: '/audit-reports', icon: ClipboardCheck, label: 'Audit Reports', module: AppModule.AuditReports },
-  { to: '/scan', icon: ScanLine, label: 'Scan & Lookup', module: AppModule.Scan },
+  { to: '/scan', icon: ScanLine, label: 'RFID Scan', module: AppModule.Scan },
   { to: '/invoices', icon: FileText, label: 'Invoices', module: AppModule.Invoices },
   { to: '/customers', icon: Users, label: 'Customers', module: AppModule.Customers },
   { to: '/crm', icon: Contact, label: 'CRM', module: AppModule.Crm },

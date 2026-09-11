@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Search, Eye, XCircle, CreditCard, Download } from 'lucide-react'
+import { Plus, Search, Eye, XCircle, CreditCard, Download, Scale } from 'lucide-react'
 import { invoicesApi } from '../../api'
 import { fmtCurrency, fmtDate, invoiceStatusColor, invoiceStatusLabel, invoiceTypeLabel } from '../../utils/format'
 import { InvoiceStatus, InvoiceType, PaymentMethod } from '../../types'
@@ -24,12 +24,29 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1)
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [exchangeMode, setExchangeMode] = useState(false)
+  const [prefillTag, setPrefillTag] = useState<string>()
   const [payInvoice, setPayInvoice] = useState<Invoice | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
 
+  const openCreate = (opts?: { exchange?: boolean; tag?: string }) => {
+    setExchangeMode(!!opts?.exchange)
+    setPrefillTag(opts?.tag || undefined)
+    setShowCreate(true)
+  }
+
+  const closeCreate = () => {
+    setShowCreate(false)
+    setExchangeMode(false)
+    setPrefillTag(undefined)
+  }
+
   useEffect(() => {
-    if (searchParams.get('new')) {
-      setShowCreate(true)
+    const isNew = searchParams.get('new')
+    const isExchange = searchParams.get('exchange') === '1'
+    const tag = searchParams.get('tag')
+    if (isNew || isExchange || tag) {
+      openCreate({ exchange: isExchange, tag: tag || undefined })
       setSearchParams({}, { replace: true })
     }
   }, [searchParams, setSearchParams])
@@ -103,7 +120,8 @@ export default function InvoicesPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={handleExport} loading={exporting}><Download size={15} /> Export</Button>
-          <Button size="sm" onClick={() => setShowCreate(true)}><Plus size={15} /> New Invoice</Button>
+          <Button variant="outline" size="sm" onClick={() => openCreate({ exchange: true })}><Scale size={15} /> Metal Exchange</Button>
+          <Button size="sm" onClick={() => openCreate()}><Plus size={15} /> New Invoice</Button>
         </div>
       </div>
 
@@ -130,8 +148,18 @@ export default function InvoicesPage() {
         <Pagination currentPage={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} totalCount={data?.totalCount} pageSize={20} />
       </div>
 
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Create New Invoice" size="2xl">
-        <CreateInvoiceForm onSuccess={(inv) => { setShowCreate(false); qc.invalidateQueries({ queryKey: ['invoices'] }); setViewInvoice(inv); toast.success(`Invoice ${inv.invoiceNumber} created`) }} />
+      <Modal
+        open={showCreate}
+        onClose={closeCreate}
+        title={exchangeMode ? 'Metal Exchange' : prefillTag ? 'New Sale from Scan' : 'Create New Invoice'}
+        size="2xl"
+      >
+        <CreateInvoiceForm
+          key={`${exchangeMode}-${prefillTag ?? ''}-${showCreate}`}
+          startWithExchange={exchangeMode}
+          prefillTag={prefillTag}
+          onSuccess={(inv) => { closeCreate(); qc.invalidateQueries({ queryKey: ['invoices'] }); setViewInvoice(inv); toast.success(`Invoice ${inv.invoiceNumber} created`) }}
+        />
       </Modal>
 
       <Modal open={!!viewInvoice} onClose={() => setViewInvoice(null)} title={`Invoice ${viewInvoice?.invoiceNumber ?? ''}`} size="xl">

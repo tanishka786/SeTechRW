@@ -59,9 +59,10 @@ function emptyRow(buyingRate: number): OldGoldDraft {
 interface Props {
   items: OldGoldDraft[]
   onChange: Dispatch<SetStateAction<OldGoldDraft[]>>
+  autoFocusFirst?: boolean
 }
 
-export default function OldGoldCalculator({ items, onChange }: Props) {
+export default function OldGoldCalculator({ items, onChange, autoFocusFirst }: Props) {
   const currencySymbol = useAuthStore(s => s.tenant?.currencySymbol) ?? '₹'
   const { data: rates } = useQuery({ queryKey: ['live-metal-rates'], queryFn: catalogApi.liveRates })
   const gold22 = rates?.find(r => /gold/i.test(r.metalName) && /22/i.test(r.purityName))
@@ -124,6 +125,7 @@ export default function OldGoldCalculator({ items, onChange }: Props) {
             <label className="text-xs text-gray-600">
               Gross weight (g)
               <input type="number" min={0} step="0.001" value={row.grossWeight || ''}
+                autoFocus={autoFocusFirst && i === 0}
                 onChange={e => update(i, { grossWeight: Number(e.target.value) || 0 })}
                 className="mt-1 w-full px-2 py-1.5 border rounded-lg text-sm" />
             </label>
