@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Download, CreditCard, Link as LinkIcon, Banknote } from 'lucide-react'
+import { Download, CreditCard, Link as LinkIcon, Banknote, AlertTriangle, ShieldCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { fmtCurrency, fmtDate, fmtDateTime, fmtWeight, invoiceStatusLabel, invoiceStatusColor, invoiceTypeLabel, paymentMethodLabel } from '../../../utils/format'
 import { InvoiceStatus, PaymentMethod } from '../../../types'
 import type { Invoice } from '../../../types'
@@ -9,7 +9,8 @@ import Badge from '../../../components/ui/Badge'
 import Button from '../../../components/ui/Button'
 import Modal from '../../../components/ui/Modal'
 import { Select } from '../../../components/ui/Input'
-import { invoicesApi, paymentsApi } from '../../../api'
+import { invoicesApi, paymentsApi, settingsApi } from '../../../api'
+import { DEFAULT_CASH_PAN_LIMIT, isValidPan } from '../../../components/invoices/CashKycAlert'
 import AddPaymentForm from './AddPaymentForm'
 
 declare global {
@@ -51,6 +52,14 @@ export default function InvoiceDetail({ invoice, onPaid }: { invoice: Invoice; o
     onSuccess: () => { toast.success('Status updated'); onPaid?.() },
     onError: (err: unknown) => toast.error(err instanceof Error ? err.message : 'Failed to update status'),
   })
+
+  const { data: invoiceSettings } = useQuery({ queryKey: ['invoice-settings'], queryFn: settingsApi.getInvoiceSettings })
+  const cashLimit = invoiceSettings?.cashPanLimit && invoiceSettings.cashPanLimit > 0
+    ? invoiceSettings.cashPanLimit
+    : DEFAULT_CASH_PAN_LIMIT
+  const cashOnInvoice = (invoice.payments ?? [])
+    .filter(p => p.paymentMethod === PaymentMethod.Cash && !p.isRefunded)
+    .reduce((s, p) => s + p.amount, 0)
 
   const handleDownloadPdf = async () => {
     setDownloading(true)
@@ -141,6 +150,20 @@ export default function InvoiceDetail({ invoice, onPaid }: { invoice: Invoice; o
           </>
         )}
       </div>
+
+      {cashOnInvoice >= cashLimit && (
+        <div className={`rounded-xl border px-3 py-2.5 flex items-start gap-2 text-sm ${isValidPan(invoice.customerPan) ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-red-200 bg-red-50 text-red-800'}`}>
+          {isValidPan(invoice.customerPan)
+            ? <ShieldCheck size={16} className="mt-0.5 shrink-0" />
+            : <AlertTriangle size={16} className="mt-0.5 shrink-0" />}
+          <p>
+            Cash of {fmtCurrency(cashOnInvoice)} is at or above the {fmtCurrency(cashLimit)} KYC limit (s.269ST).
+            {isValidPan(invoice.customerPan)
+              ? <> PAN on file: <span className="font-mono font-semibold">{invoice.customerPan}</span>.</>
+              : ' Customer PAN is missing — update the customer record.'}
+          </p>
+        </div>
+      )}
 
       {invoice.status !== InvoiceStatus.Cancelled && (
         <div className="flex flex-wrap items-end gap-3 p-3 bg-gray-50 rounded-lg">

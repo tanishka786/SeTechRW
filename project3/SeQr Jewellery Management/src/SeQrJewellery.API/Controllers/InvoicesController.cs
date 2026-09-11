@@ -88,6 +88,31 @@ public class InvoicesController : BaseController
         return invoice is null ? NotFoundResult($"Invoice {id} not found.") : OkResult(MapToDto(invoice));
     }
 
+    /// <summary>Today’s cash received from a customer vs the PAN / KYC limit (Income Tax s.269ST).</summary>
+    [HttpGet("cash-kyc")]
+    public async Task<IActionResult> GetCashKyc([FromQuery] Guid? customerId, CancellationToken ct)
+    {
+        var db = await _contextAccessor.GetContextAsync(ct);
+        var limit = await GetCashPanLimitAsync(db, ct);
+        string? pan = null;
+        if (customerId.HasValue)
+        {
+            pan = await db.Customers.AsNoTracking()
+                .Where(c => c.Id == customerId.Value)
+                .Select(c => c.PAN)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        var todayCash = await SumTodayCashAsync(db, customerId, ct);
+        return OkResult(new CashKycStatusDto
+        {
+            CashLimit = limit,
+            TodayCashReceived = todayCash,
+            CustomerHasPan = CashKycHelper.IsValidPan(pan),
+            CustomerPan = pan
+        });
+    }
+
     /// <summary>Create a new invoice (sale, purchase, etc.)</summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateInvoiceRequest request, CancellationToken ct)
@@ -236,6 +261,13 @@ public class InvoicesController : BaseController
             }
         }
 
+        if (request.InvoiceType == InvoiceType.Sale)
+        {
+            var cashNew = invoice.Payments.Where(p => p.PaymentMethod == PaymentMethod.Cash).Sum(p => p.Amount);
+            var kycError = await EnsureCashKycAsync(db, request.CustomerId, cashNew, request.CustomerPan, ct);
+            if (kycError != null) return BadRequestResult(kycError);
+        }
+
         var totalPaid = invoice.Payments.Sum(p => p.Amount) + invoice.OldGoldAmount;
         invoice.PaidAmount = totalPaid;
         invoice.BalanceAmount = invoice.TotalAmount - totalPaid;
@@ -312,6 +344,12 @@ public class InvoicesController : BaseController
             return BadRequestResult("Cannot add payment to a cancelled invoice.");
         if (request.Amount <= 0)
             return BadRequestResult("Payment amount must be greater than zero.");
+
+        if (invoice.InvoiceType == InvoiceType.Sale && request.PaymentMethod == PaymentMethod.Cash)
+        {
+            var kycError = await EnsureCashKycAsync(db, invoice.CustomerId, request.Amount, request.CustomerPan, ct);
+            if (kycError != null) return BadRequestResult(kycError);
+        }
 
         var payment = new Payment
         {
@@ -536,6 +574,7 @@ public class InvoicesController : BaseController
         CustomerId = i.CustomerId,
         CustomerName = i.Customer != null ? $"{i.Customer.FirstName} {i.Customer.LastName}" : null,
         CustomerPhone = i.Customer?.Phone,
+        CustomerPan = i.Customer?.PAN,
         SupplierId = i.SupplierId,
         SupplierName = i.Supplier?.Name,
         SubTotal = i.SubTotal,
@@ -599,4 +638,47 @@ public class InvoicesController : BaseController
         }),
         CreatedAt = i.CreatedAt
     };
+
+    private static async Task<decimal> GetCashPanLimitAsync(TenantDbContext db, CancellationToken ct)
+    {
+        var stored = await db.InvoiceSettings.AsNoTracking()
+            .Select(s => s.CashPanLimit)
+            .FirstOrDefaultAsync(ct);
+        return stored > 0 ? stored : CashKycHelper.DefaultCashLimit;
+    }
+
+    private static async Task<decimal> SumTodayCashAsync(TenantDbContext db, Guid? customerId, CancellationToken ct)
+    {
+        if (!customerId.HasValue) return 0;
+        var (startUtc, endUtc) = CashKycHelper.GetIndiaDayUtcRange(DateTime.UtcNow);
+        return await db.Payments.AsNoTracking()
+            .Where(p => p.PaymentMethod == PaymentMethod.Cash
+                && !p.IsRefunded
+                && p.PaymentDate >= startUtc && p.PaymentDate < endUtc
+                && p.Invoice.CustomerId == customerId
+                && p.Invoice.Status != InvoiceStatus.Cancelled)
+            .SumAsync(p => p.Amount, ct);
+    }
+
+    private static async Task<string?> EnsureCashKycAsync(
+        TenantDbContext db, Guid? customerId, decimal additionalCash, string? incomingPan, CancellationToken ct)
+    {
+        if (additionalCash <= 0) return null;
+
+        var limit = await GetCashPanLimitAsync(db, ct);
+        var todayCash = await SumTodayCashAsync(db, customerId, ct);
+        var customer = customerId.HasValue
+            ? await db.Customers.FirstOrDefaultAsync(c => c.Id == customerId.Value, ct)
+            : null;
+
+        var normalized = CashKycHelper.NormalizePan(incomingPan);
+        var pan = CashKycHelper.IsValidPan(normalized) ? normalized : customer?.PAN;
+        var error = CashKycHelper.BlockReason(todayCash + additionalCash, limit, customer != null, pan);
+        if (error != null) return error;
+
+        if (customer != null && CashKycHelper.IsValidPan(normalized))
+            customer.PAN = normalized;
+
+        return null;
+    }
 }

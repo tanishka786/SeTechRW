@@ -13,6 +13,7 @@ public class InvoiceDto
     public Guid? CustomerId { get; set; }
     public string? CustomerName { get; set; }
     public string? CustomerPhone { get; set; }
+    public string? CustomerPan { get; set; }
     public Guid? SupplierId { get; set; }
     public string? SupplierName { get; set; }
     public decimal SubTotal { get; set; }
@@ -84,6 +85,8 @@ public class CreateInvoiceRequest
     public IEnumerable<CreateInvoiceItemRequest> Items { get; set; } = Enumerable.Empty<CreateInvoiceItemRequest>();
     public IEnumerable<CreateOldGoldExchangeItemRequest>? OldGoldItems { get; set; }
     public IEnumerable<CreatePaymentRequest>? Payments { get; set; }
+    /// <summary>PAN to save on the customer when cash meets the KYC limit.</summary>
+    public string? CustomerPan { get; set; }
 }
 
 public class CreateOldGoldExchangeItemRequest
@@ -135,6 +138,16 @@ public class CreatePaymentRequest
     public string? Notes { get; set; }
     /// <summary>Optional explicit status after recording payment (Paid / PartiallyPaid / Confirmed).</summary>
     public InvoiceStatus? StatusOverride { get; set; }
+    /// <summary>PAN to save on the customer when cash meets the KYC limit.</summary>
+    public string? CustomerPan { get; set; }
+}
+
+public class CashKycStatusDto
+{
+    public decimal CashLimit { get; set; }
+    public decimal TodayCashReceived { get; set; }
+    public bool CustomerHasPan { get; set; }
+    public string? CustomerPan { get; set; }
 }
 
 public class UpdateInvoiceStatusRequest

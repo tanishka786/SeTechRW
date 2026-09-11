@@ -13,7 +13,7 @@ import type {
   LeadNote, LeadActivity, CreateLeadNoteRequest, FollowUpStats, FollowUpType,
   LeadStatus, LeadSource,
   Role, CreateRoleRequest, UpdateRoleRequest, TenantUserAccount, CreateTenantUserRequest, UpdateTenantUserRequest,
-  InvoiceSettings, UpdateInvoiceSettingsRequest,
+  InvoiceSettings, UpdateInvoiceSettingsRequest, CashKycStatus,
   RazorpayOrder, PaymentLink,
   SocialSettings, SocialReview, SocialPost,
 } from '../types'
@@ -146,6 +146,8 @@ export const invoicesApi = {
   export: (params: { searchTerm?: string; invoiceType?: InvoiceType; status?: InvoiceStatus; fromDate?: string; toDate?: string }) =>
     downloadFile('/invoices/export', params, 'Invoices.xlsx'),
   downloadPdf: (id: string, invoiceNumber: string) => downloadFile(`/invoices/${id}/pdf`, undefined, `Invoice_${invoiceNumber}.pdf`),
+  cashKyc: (customerId?: string) =>
+    apiClient.get<ApiResponse<CashKycStatus>>('/invoices/cash-kyc', { params: { customerId } }).then(unwrap),
 }
 
 // ── Print Queue ───────────────────────────────────────────────────────

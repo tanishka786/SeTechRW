@@ -71,6 +71,7 @@ function InvoiceSettingsTab() {
     paperSize: settings.paperSize ?? InvoicePaperSize.A4,
     marginMm: settings.marginMm ?? 12, logoHeightMm: settings.logoHeightMm ?? 18, fontSizePt: settings.fontSizePt ?? 9,
     razorpayEnabled: settings.razorpayEnabled, razorpayKeyId: settings.razorpayKeyId, razorpayKeySecret: '',
+    cashPanLimit: settings.cashPanLimit ?? 200000,
   } as UpdateInvoiceSettingsRequest : null)
 
   const update = <K extends keyof UpdateInvoiceSettingsRequest>(key: K, value: UpdateInvoiceSettingsRequest[K]) => {
@@ -120,6 +121,23 @@ function InvoiceSettingsTab() {
           <Input label="PAN" value={effective.pan ?? ''} onChange={e => update('pan', e.target.value)} />
           <Input label="Default HSN Code" value={effective.defaultHSNCode ?? ''} onChange={e => update('defaultHSNCode', e.target.value)} />
           <Input label="Jurisdiction" value={effective.jurisdiction ?? ''} onChange={e => update('jurisdiction', e.target.value)} placeholder="e.g. Mumbai" />
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <h3 className="font-semibold text-gray-800 mb-1">Cash / PAN KYC</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Income Tax s.269ST: do not receive ₹2,00,000 or more in cash in a day. Staff will be asked for customer PAN when cash on a sale (plus that customer’s cash today) reaches this limit.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            label="Cash PAN limit (₹)"
+            type="number"
+            min={0}
+            step="1"
+            value={effective.cashPanLimit ?? 200000}
+            onChange={e => update('cashPanLimit', Number(e.target.value) || 0)}
+          />
         </div>
       </div>
 

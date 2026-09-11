@@ -49,6 +49,8 @@ public class InvoiceSettingsDto
     public string? RazorpayKeyId { get; set; }
     /// <summary>Never sent back to client with an actual value; true means a secret is configured.</summary>
     public bool RazorpayKeySecretConfigured { get; set; }
+    /// <summary>Cash (₹) at or above which PAN / KYC is required. Default 200000.</summary>
+    public decimal CashPanLimit { get; set; } = 200_000m;
 }
 
 public class UpdateInvoiceSettingsRequest
@@ -95,6 +97,7 @@ public class UpdateInvoiceSettingsRequest
     public string? RazorpayKeyId { get; set; }
     /// <summary>Only overwrites the stored secret when non-null/non-empty.</summary>
     public string? RazorpayKeySecret { get; set; }
+    public decimal CashPanLimit { get; set; } = 200_000m;
 }
 
 public class SocialSettingsDto

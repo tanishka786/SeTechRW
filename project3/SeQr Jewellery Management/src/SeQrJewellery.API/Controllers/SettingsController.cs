@@ -6,6 +6,7 @@ using SeQrJewellery.Application.DTOs.Settings;
 using SeQrJewellery.Application.Interfaces;
 using SeQrJewellery.Domain.Entities.Tenant;
 using SeQrJewellery.Domain.Enums;
+using SeQrJewellery.Domain.Helpers;
 using SeQrJewellery.Infrastructure.Data;
 
 namespace SeQrJewellery.API.Controllers;
@@ -88,6 +89,7 @@ public class SettingsController : BaseController
         settings.RazorpayKeyId = request.RazorpayKeyId;
         if (!string.IsNullOrWhiteSpace(request.RazorpayKeySecret))
             settings.RazorpayKeySecret = request.RazorpayKeySecret;
+        settings.CashPanLimit = request.CashPanLimit > 0 ? request.CashPanLimit : CashKycHelper.DefaultCashLimit;
 
         await db.SaveChangesAsync(ct);
         return OkResult(MapToDto(settings), "Invoice settings saved.");
@@ -226,6 +228,7 @@ public class SettingsController : BaseController
             RazorpayEnabled = s.RazorpayEnabled,
             RazorpayKeyId = s.RazorpayKeyId,
             RazorpayKeySecretConfigured = !string.IsNullOrWhiteSpace(s.RazorpayKeySecret),
+            CashPanLimit = s.CashPanLimit > 0 ? s.CashPanLimit : CashKycHelper.DefaultCashLimit,
         };
     }
 

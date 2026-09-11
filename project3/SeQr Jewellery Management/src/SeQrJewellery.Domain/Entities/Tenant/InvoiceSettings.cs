@@ -66,4 +66,7 @@ public class InvoiceSettings : BaseEntity
     public string? RazorpayKeyId { get; set; }
     public string? RazorpayKeySecret { get; set; }
     public bool RazorpayEnabled { get; set; } = false;
+
+    /// <summary>Cash (₹) at or above which PAN / KYC is required. Default ₹2,00,000 (Income Tax s.269ST).</summary>
+    public decimal CashPanLimit { get; set; } = 200_000m;
 }

@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Plus, Trash2, ScanLine, UserPlus } from 'lucide-react'
-import { invoicesApi, customersApi, tagsApi } from '../../../api'
+import { invoicesApi, customersApi, tagsApi, settingsApi } from '../../../api'
+import { handleApiError } from '../../../api/client'
 import { Input, Select } from '../../../components/ui/Input'
 import Combobox from '../../../components/ui/Combobox'
 import Button from '../../../components/ui/Button'
@@ -11,6 +12,7 @@ import type { Invoice, CreateInvoiceRequest, CreateInvoiceItemRequest, CreatePay
 import { fmtCurrency } from '../../../utils/format'
 import OldGoldCalculator from '../../../components/invoices/OldGoldCalculator'
 import type { OldGoldDraft } from '../../../components/invoices/OldGoldCalculator'
+import CashKycAlert, { DEFAULT_CASH_PAN_LIMIT, isValidPan } from '../../../components/invoices/CashKycAlert'
 import toast from 'react-hot-toast'
 
 interface Props { onSuccess: (invoice: Invoice) => void; startWithExchange?: boolean; prefillTag?: string }
@@ -40,6 +42,7 @@ export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefil
   const [customerSearch, setCustomerSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [newCustomer, setNewCustomer] = useState<{ name: string; phone: string } | null>(null)
+  const [kycPan, setKycPan] = useState('')
   const prefillDone = useRef(false)
 
   useEffect(() => {
@@ -56,10 +59,23 @@ export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefil
   const { register, handleSubmit, watch, setValue, control, formState: { isSubmitting } } = useForm<FormData>({
     defaultValues: { invoiceType: InvoiceType.Sale, invoiceDate: new Date().toISOString().split('T')[0], oldGoldAmount: 0, oldGoldWeight: 0, isIGST: false }
   })
+  const customerId = watch('customerId')
+  const invoiceType = watch('invoiceType')
+
+  const { data: invoiceSettings } = useQuery({ queryKey: ['invoice-settings'], queryFn: settingsApi.getInvoiceSettings })
+  const cashLimit = invoiceSettings?.cashPanLimit && invoiceSettings.cashPanLimit > 0
+    ? invoiceSettings.cashPanLimit
+    : DEFAULT_CASH_PAN_LIMIT
+  const { data: cashKyc } = useQuery({
+    queryKey: ['cash-kyc', customerId],
+    queryFn: () => invoicesApi.cashKyc(customerId || undefined),
+    enabled: Number(invoiceType) === InvoiceType.Sale,
+  })
 
   const mutation = useMutation({
     mutationFn: (req: CreateInvoiceRequest) => invoicesApi.create(req),
     onSuccess,
+    onError: (err) => toast.error(handleApiError(err)),
   })
 
   const createCustomerMutation = useMutation({
@@ -68,6 +84,7 @@ export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefil
       return customersApi.create({
         firstName, lastName: rest.join(' ') || undefined, phone: data.phone.trim() || undefined,
         gender: GenderType.PreferNotToSay, customerType: CustomerType.Retail, creditLimit: 0,
+        pan: kycPan.trim() || undefined,
       })
     },
     onSuccess: (c) => {
@@ -82,7 +99,7 @@ export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefil
   const customerOptions = customers?.items.map(c => ({
     value: c.id,
     label: c.fullName,
-    sublabel: c.phone ?? c.email ?? '',
+    sublabel: [c.phone ?? c.email, c.pan ? 'PAN on file' : null].filter(Boolean).join(' · '),
   })) ?? []
 
   const handleScan = async (raw?: string) => {
@@ -129,13 +146,22 @@ export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefil
   const oldGoldWeight = oldGoldPieces.reduce((s, r) => s + (Number(r.grossWeight) || 0), 0)
   const totalCredited = payTotal + oldGoldCredit
   const balanceDue = Math.max(0, itemTotal - totalCredited)
+  const cashOnBill = payments.filter(p => p.paymentMethod === PaymentMethod.Cash).reduce((s, p) => s + (Number(p.amount) || 0), 0)
+  const todayCashElsewhere = cashKyc?.todayCashReceived ?? 0
+  const selectedCustomer = customers?.items.find(c => c.id === customerId)
+  const storedPan = selectedCustomer?.pan || cashKyc?.customerPan
 
   const onSubmit = (data: FormData) => {
     if (!items.length) { toast.error('Add at least one item'); return }
+    if (Number(data.invoiceType) === InvoiceType.Sale && cashOnBill + todayCashElsewhere >= cashLimit) {
+      if (!data.customerId) { toast.error('Select a customer — cash is at the PAN / KYC limit'); return }
+      if (!isValidPan(storedPan) && !isValidPan(kycPan)) { toast.error('Enter customer PAN before taking this cash'); return }
+    }
     const pieces = oldGoldPieces.filter(r => r.grossWeight > 0 && r.buyingRatePerGram > 0)
     mutation.mutate({
       ...data,
       customerId: data.customerId || undefined,
+      customerPan: kycPan || undefined,
       oldGoldAmount: pieces.reduce((s, r) => s + r.creditAmount, 0),
       oldGoldWeight: pieces.reduce((s, r) => s + r.grossWeight, 0),
       oldGoldItems: pieces.map(({ fineWeight: _f, payableWeight: _pw, creditAmount: _c, customPurity: _cp, ...rest }) => rest),
@@ -292,6 +318,18 @@ export default function CreateInvoiceForm({ onSuccess, startWithExchange, prefil
           </div>
         ))}
       </div>
+
+      {Number(invoiceType) === InvoiceType.Sale && (
+        <CashKycAlert
+          cashOnThisBill={cashOnBill}
+          todayCashElsewhere={todayCashElsewhere}
+          limit={cashLimit}
+          customerId={customerId || undefined}
+          storedPan={storedPan}
+          capturedPan={kycPan}
+          onPanChange={setKycPan}
+        />
+      )}
 
       {/* Summary */}
       <div className="bg-amber-50 rounded-xl p-4 flex flex-wrap justify-between gap-4">

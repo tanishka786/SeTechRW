@@ -310,6 +310,7 @@ public class TenantDbContext : DbContext, ITenantDbContext
         modelBuilder.Entity<InvoiceSettings>(e =>
         {
             e.Property(s => s.ShopName).HasMaxLength(300);
+            e.Property(s => s.CashPanLimit).HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<SocialAccount>(e =>

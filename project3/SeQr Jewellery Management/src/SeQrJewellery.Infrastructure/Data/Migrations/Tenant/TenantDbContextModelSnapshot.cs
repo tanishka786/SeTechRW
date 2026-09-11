@@ -824,6 +824,10 @@ namespace SeQrJewellery.Infrastructure.Data.Migrations.Tenant
                     b.Property<string>("BankName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("CashPanLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("City")
                         .HasColumnType("nvarchar(max)");
 

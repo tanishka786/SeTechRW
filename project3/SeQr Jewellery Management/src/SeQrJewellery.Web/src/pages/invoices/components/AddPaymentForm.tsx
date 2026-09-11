@@ -1,17 +1,22 @@
+import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { useMutation } from '@tanstack/react-query'
-import { invoicesApi } from '../../../api'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { invoicesApi, settingsApi } from '../../../api'
+import { handleApiError } from '../../../api/client'
 import { Input, Select } from '../../../components/ui/Input'
 import Button from '../../../components/ui/Button'
-import { InvoiceStatus, PaymentMethod } from '../../../types'
+import { InvoiceStatus, InvoiceType, PaymentMethod } from '../../../types'
 import type { Invoice, CreatePaymentRequest } from '../../../types'
 import { fmtCurrency } from '../../../utils/format'
+import CashKycAlert, { DEFAULT_CASH_PAN_LIMIT, isValidPan } from '../../../components/invoices/CashKycAlert'
+import toast from 'react-hot-toast'
 
 interface Props { invoice: Invoice; onSuccess: () => void }
 
 type PaymentFormValues = CreatePaymentRequest & { paymentDate?: string }
 
 export default function AddPaymentForm({ invoice, onSuccess }: Props) {
+  const [kycPan, setKycPan] = useState('')
   const { register, handleSubmit, control, formState: { isSubmitting } } = useForm<PaymentFormValues>({
     defaultValues: {
       paymentMethod: PaymentMethod.Cash,
@@ -22,10 +27,22 @@ export default function AddPaymentForm({ invoice, onSuccess }: Props) {
   })
 
   const method = useWatch({ control, name: 'paymentMethod' })
+  const amount = useWatch({ control, name: 'amount' })
+
+  const { data: invoiceSettings } = useQuery({ queryKey: ['invoice-settings'], queryFn: settingsApi.getInvoiceSettings })
+  const cashLimit = invoiceSettings?.cashPanLimit && invoiceSettings.cashPanLimit > 0
+    ? invoiceSettings.cashPanLimit
+    : DEFAULT_CASH_PAN_LIMIT
+  const { data: cashKyc } = useQuery({
+    queryKey: ['cash-kyc', invoice.customerId],
+    queryFn: () => invoicesApi.cashKyc(invoice.customerId),
+    enabled: invoice.invoiceType === InvoiceType.Sale,
+  })
 
   const mutation = useMutation({
     mutationFn: (req: CreatePaymentRequest) => invoicesApi.addPayment(invoice.id, req),
     onSuccess,
+    onError: (err) => toast.error(handleApiError(err)),
   })
 
   const paymentOptions = [
@@ -46,6 +63,16 @@ export default function AddPaymentForm({ invoice, onSuccess }: Props) {
   ]
 
   const onSubmit = (data: PaymentFormValues) => {
+    const isCash = Number(data.paymentMethod) === PaymentMethod.Cash
+    const cashAmount = isCash ? Number(data.amount) || 0 : 0
+    const todayCash = cashKyc?.todayCashReceived ?? 0
+    const storedPan = invoice.customerPan || cashKyc?.customerPan
+
+    if (invoice.invoiceType === InvoiceType.Sale && cashAmount + todayCash >= cashLimit) {
+      if (!invoice.customerId) { toast.error('This invoice is walk-in. Add a customer with PAN before taking this cash.'); return }
+      if (!isValidPan(storedPan) && !isValidPan(kycPan)) { toast.error('Enter customer PAN before taking this cash'); return }
+    }
+
     const statusOverride = data.statusOverride === undefined || data.statusOverride === null || (data.statusOverride as unknown as string) === ''
       ? undefined
       : Number(data.statusOverride) as InvoiceStatus
@@ -61,6 +88,7 @@ export default function AddPaymentForm({ invoice, onSuccess }: Props) {
       upiTransactionId: data.upiTransactionId || undefined,
       notes: data.notes || undefined,
       statusOverride,
+      customerPan: kycPan || undefined,
     })
   }
 
@@ -87,6 +115,18 @@ export default function AddPaymentForm({ invoice, onSuccess }: Props) {
 
       {Number(method) === PaymentMethod.Cash && (
         <Input label="Receipt / Notes" placeholder="Cash received by…" {...register('notes')} />
+      )}
+
+      {invoice.invoiceType === InvoiceType.Sale && Number(method) === PaymentMethod.Cash && (
+        <CashKycAlert
+          cashOnThisBill={Number(amount) || 0}
+          todayCashElsewhere={cashKyc?.todayCashReceived ?? 0}
+          limit={cashLimit}
+          customerId={invoice.customerId}
+          storedPan={invoice.customerPan || cashKyc?.customerPan}
+          capturedPan={kycPan}
+          onPanChange={setKycPan}
+        />
       )}
 
       {Number(method) === PaymentMethod.Cheque && (

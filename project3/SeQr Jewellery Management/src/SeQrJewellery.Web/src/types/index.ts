@@ -147,7 +147,7 @@ export interface CreateCustomerRequest {
 // ── Invoices ──────────────────────────────────────────────────────────
 export interface Invoice {
   id: string; invoiceNumber: string; invoiceType: InvoiceType; status: InvoiceStatus;
-  invoiceDate: string; dueDate?: string; customerId?: string; customerName?: string; customerPhone?: string;
+  invoiceDate: string; dueDate?: string; customerId?: string; customerName?: string; customerPhone?: string; customerPan?: string;
   supplierId?: string; supplierName?: string; subTotal: number; totalDiscount: number;
   totalTax: number; totalAmount: number; paidAmount: number; balanceAmount: number;
   oldGoldAmount: number; oldGoldWeight?: number; cgst: number; sgst: number; igst: number; notes?: string;
@@ -170,6 +170,7 @@ export interface CreateInvoiceRequest {
   invoiceType: InvoiceType; invoiceDate: string; dueDate?: string; customerId?: string; supplierId?: string;
   oldGoldAmount: number; oldGoldWeight: number; isIGST: boolean; notes?: string; terms?: string;
   items: CreateInvoiceItemRequest[]; oldGoldItems?: CreateOldGoldExchangeItem[]; payments?: CreatePaymentRequest[];
+  customerPan?: string;
 }
 
 export interface CreateOldGoldExchangeItem {
@@ -188,6 +189,7 @@ export interface CreatePaymentRequest {
   chequeNumber?: string; bankName?: string; cardLast4?: string; upiTransactionId?: string;
   oldGoldWeight?: number; oldGoldPurity?: number; oldGoldRate?: number; notes?: string;
   statusOverride?: InvoiceStatus;
+  customerPan?: string;
 }
 export interface UpdateInvoiceStatusRequest { status: InvoiceStatus; notes?: string }
 
@@ -386,8 +388,13 @@ export interface InvoiceSettings {
   primaryColorHex: string; accentColorHex: string; paperSize: InvoicePaperSize;
   marginMm: number; logoHeightMm: number; fontSizePt: number;
   razorpayEnabled: boolean; razorpayKeyId?: string; razorpayKeySecretConfigured: boolean;
+  cashPanLimit?: number;
 }
 export type UpdateInvoiceSettingsRequest = Omit<InvoiceSettings, 'id' | 'logoPath' | 'upiQrCodePath' | 'razorpayKeySecretConfigured'> & { razorpayKeySecret?: string }
+
+export interface CashKycStatus {
+  cashLimit: number; todayCashReceived: number; customerHasPan: boolean; customerPan?: string | null
+}
 
 // ── Payments / Razorpay (Phase 5) ───────────────────────────────────────
 export interface RazorpayOrder {
