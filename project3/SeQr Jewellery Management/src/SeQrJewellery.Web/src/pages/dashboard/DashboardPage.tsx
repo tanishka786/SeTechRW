@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   TrendingUp, Package, Users, Wrench, Printer, IndianRupee,
-  ShoppingBag, ArrowRight, AlertCircle, PhoneCall
+  ShoppingBag, ArrowRight, AlertCircle, PhoneCall, Scale
 } from 'lucide-react'
 import { reportsApi, crmApi } from '../../api'
 import { useAuthStore } from '../../store/authStore'
-import { fmtCurrency, fmtDate, fmtDateTime, invoiceStatusColor, invoiceStatusLabel, followUpTypeLabel } from '../../utils/format'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { fmtCurrency, fmtDate, fmtDateTime, fmtWeight, invoiceStatusColor, invoiceStatusLabel, followUpTypeLabel } from '../../utils/format'
+import { ComposedChart, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import Spinner from '../../components/ui/Spinner'
 import Badge from '../../components/ui/Badge'
 
@@ -39,12 +39,18 @@ export default function DashboardPage() {
   )
 
   const stats = [
-    { label: "Today's Sales", value: fmtCurrency(dashboard?.todaySales ?? 0, sym), icon: IndianRupee, color: 'bg-amber-100 text-amber-700', change: '+12%' },
-    { label: 'Monthly Sales', value: fmtCurrency(dashboard?.monthSales ?? 0, sym), icon: TrendingUp, color: 'bg-green-100 text-green-700', change: '+8%' },
+    { label: "Today's Sales", value: fmtCurrency(dashboard?.todaySales ?? 0, sym), icon: IndianRupee, color: 'bg-amber-100 text-amber-700', sub: dashboard?.todayGoldWeightSold ? fmtWeight(dashboard.todayGoldWeightSold) + ' gold' : undefined },
+    { label: 'Monthly Sales', value: fmtCurrency(dashboard?.monthSales ?? 0, sym), icon: TrendingUp, color: 'bg-green-100 text-green-700', sub: dashboard?.monthGoldWeightSold ? fmtWeight(dashboard.monthGoldWeightSold) + ' gold' : undefined },
     { label: 'Items in Stock', value: (dashboard?.inStockItems ?? 0).toString(), icon: Package, color: 'bg-blue-100 text-blue-700', sub: `${dashboard?.totalItems ?? 0} total` },
     { label: 'Customers', value: (dashboard?.totalCustomers ?? 0).toString(), icon: Users, color: 'bg-purple-100 text-purple-700' },
     { label: 'Pending Repairs', value: (dashboard?.pendingRepairs ?? 0).toString(), icon: Wrench, color: 'bg-orange-100 text-orange-700' },
     { label: 'Print Jobs', value: (dashboard?.pendingPrintJobs ?? 0).toString(), icon: Printer, color: 'bg-teal-100 text-teal-700' },
+  ]
+
+  const metalStats = [
+    { label: 'Gold sold today', value: fmtWeight(dashboard?.todayGoldWeightSold ?? 0), sub: `This month ${fmtWeight(dashboard?.monthGoldWeightSold ?? 0)}`, color: 'bg-amber-100 text-amber-800' },
+    { label: 'Gold in stock', value: fmtWeight(dashboard?.goldStockWeight ?? 0), sub: 'Net metal weight', color: 'bg-yellow-100 text-yellow-800' },
+    { label: 'Silver in stock', value: fmtWeight(dashboard?.silverStockWeight ?? 0), sub: dashboard?.todayOldGoldWeight ? `Old gold in ${fmtWeight(dashboard.todayOldGoldWeight)}` : 'Net metal weight', color: 'bg-slate-100 text-slate-700' },
   ]
 
   return (
@@ -62,14 +68,29 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {stats.map(({ label, value, icon: Icon, color, change, sub }) => (
+        {stats.map(({ label, value, icon: Icon, color, sub }) => (
           <div key={label} className="stat-card">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${color}`}>
               <Icon size={20} />
             </div>
             <div className="text-xl font-bold text-gray-900 mb-0.5">{value}</div>
             <div className="text-xs text-gray-500">{label}</div>
-            {(change || sub) && <div className="text-xs text-green-600 font-medium mt-1">{change ?? sub}</div>}
+            {sub && <div className="text-xs text-amber-700 font-medium mt-1">{sub}</div>}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {metalStats.map(({ label, value, sub, color }) => (
+          <div key={label} className="stat-card flex items-start gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+              <Scale size={20} />
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-gray-900">{value}</div>
+              <div className="text-sm text-gray-600">{label}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{sub}</div>
+            </div>
           </div>
         ))}
       </div>
@@ -79,11 +100,12 @@ export default function DashboardPage() {
         <div className="card p-5 lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-800">Sales (Last 7 Days)</h2>
+            <span className="text-[11px] text-gray-400">₹ sales · gold grams</span>
             <Link to="/reports" className="text-xs text-amber-600 hover:underline flex items-center gap-1">View Reports <ArrowRight size={12} /></Link>
           </div>
           {sales?.salesByDay ? (
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={sales.salesByDay} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <ComposedChart data={sales.salesByDay} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#d97706" stopOpacity={0.2} />
@@ -92,10 +114,17 @@ export default function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d) => fmtDate(d).slice(0, 5)} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${sym}${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: unknown) => [fmtCurrency(v as number, sym), 'Sales']} />
-                <Area type="monotone" dataKey="amount" stroke="#d97706" strokeWidth={2} fill="url(#salesGrad)" />
-              </AreaChart>
+                <YAxis yAxisId="rs" tick={{ fontSize: 11 }} tickFormatter={(v) => `${sym}${(v / 1000).toFixed(0)}k`} />
+                <YAxis yAxisId="g" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => `${Number(v).toFixed(0)}g`} />
+                <Tooltip
+                  formatter={(v: unknown, name: unknown) =>
+                    name === 'goldWeight'
+                      ? [fmtWeight(v as number), 'Gold']
+                      : [fmtCurrency(v as number, sym), 'Sales']}
+                />
+                <Area yAxisId="rs" type="monotone" dataKey="amount" stroke="#d97706" strokeWidth={2} fill="url(#salesGrad)" />
+                <Bar yAxisId="g" dataKey="goldWeight" fill="#a16207" radius={[3, 3, 0, 0]} barSize={14} />
+              </ComposedChart>
             </ResponsiveContainer>
           ) : (
             <div className="h-[220px] flex items-center justify-center text-gray-400">No sales data</div>

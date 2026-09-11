@@ -238,13 +238,15 @@ export interface LabelTemplate { id: string; name: string; tagType: TagType; bar
 export interface DashboardData {
   todaySales: number; monthSales: number; totalItems: number; inStockItems: number;
   totalCustomers: number; pendingRepairs: number; pendingPrintJobs: number;
+  todayGoldWeightSold: number; monthGoldWeightSold: number;
+  goldStockWeight: number; silverStockWeight: number; todayOldGoldWeight: number;
   recentInvoices: { invoiceNumber: string; customerName: string; totalAmount: number; status: InvoiceStatus; invoiceDate: string }[];
 }
 
 export interface SalesReport {
   fromDate: string; toDate: string; totalInvoices: number; totalSalesAmount: number;
   totalTaxCollected: number; totalDiscount: number; totalWeight: number;
-  salesByDay: { date: string; invoiceCount: number; amount: number }[];
+  salesByDay: { date: string; invoiceCount: number; amount: number; goldWeight?: number }[];
   salesByCategory: { categoryName: string; itemCount: number; totalAmount: number; percentage: number }[];
   salesByMetal: { metalName: string; totalWeight: number; totalAmount: number }[];
   topCustomers: { customerName: string; purchaseCount: number; totalAmount: number }[];

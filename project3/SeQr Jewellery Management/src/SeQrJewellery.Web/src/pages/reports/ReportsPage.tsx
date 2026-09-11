@@ -98,8 +98,8 @@ export default function ReportsPage() {
                 {[
                   ['Total Sales', fmtCurrency(sales.totalSalesAmount)],
                   ['Invoices', sales.totalInvoices.toString()],
+                  ['Gold sold', fmtWeight(sales.salesByMetal?.find(m => /gold/i.test(m.metalName))?.totalWeight ?? 0)],
                   ['Tax Collected', fmtCurrency(sales.totalTaxCollected)],
-                  ['Total Discount', fmtCurrency(sales.totalDiscount)],
                 ].map(([l, v]) => (
                   <div key={l} className="card p-4">
                     <p className="text-xs text-gray-500">{l}</p>

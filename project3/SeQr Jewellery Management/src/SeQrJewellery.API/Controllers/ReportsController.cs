@@ -54,7 +54,15 @@ public class ReportsController : BaseController
 
             SalesByDay = invoices
                 .GroupBy(i => i.InvoiceDate.Date)
-                .Select(g => new SalesByDayDto { Date = g.Key, InvoiceCount = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
+                .Select(g => new SalesByDayDto
+                {
+                    Date = g.Key,
+                    InvoiceCount = g.Count(),
+                    Amount = g.Sum(i => i.TotalAmount),
+                    GoldWeight = g.SelectMany(i => i.Items)
+                        .Where(item => item.JewelleryItem?.Metal?.MetalType == MetalType.Gold)
+                        .Sum(item => item.NetWeight * item.Quantity)
+                })
                 .OrderBy(x => x.Date),
 
             SalesByCategory = invoices.SelectMany(i => i.Items)
@@ -203,11 +211,36 @@ public class ReportsController : BaseController
 
         var todaySales = await db.Invoices
             .Where(i => i.InvoiceType == InvoiceType.Sale && i.Status != InvoiceStatus.Cancelled && i.InvoiceDate >= today)
-            .SumAsync(i => i.TotalAmount, ct);
+            .SumAsync(i => (decimal?)i.TotalAmount, ct) ?? 0;
 
         var monthSales = await db.Invoices
             .Where(i => i.InvoiceType == InvoiceType.Sale && i.Status != InvoiceStatus.Cancelled && i.InvoiceDate >= thisMonthStart)
-            .SumAsync(i => i.TotalAmount, ct);
+            .SumAsync(i => (decimal?)i.TotalAmount, ct) ?? 0;
+
+        var goldLine = db.InvoiceItems.Where(li =>
+            li.Invoice.InvoiceType == InvoiceType.Sale
+            && li.Invoice.Status != InvoiceStatus.Cancelled
+            && li.JewelleryItem.Metal.MetalType == MetalType.Gold);
+
+        var todayGoldWeightSold = await goldLine
+            .Where(li => li.Invoice.InvoiceDate >= today)
+            .SumAsync(li => (decimal?)(li.NetWeight * li.Quantity), ct) ?? 0;
+
+        var monthGoldWeightSold = await goldLine
+            .Where(li => li.Invoice.InvoiceDate >= thisMonthStart)
+            .SumAsync(li => (decimal?)(li.NetWeight * li.Quantity), ct) ?? 0;
+
+        var todayOldGoldWeight = await db.Invoices
+            .Where(i => i.InvoiceType == InvoiceType.Sale && i.Status != InvoiceStatus.Cancelled && i.InvoiceDate >= today)
+            .SumAsync(i => (decimal?)i.OldGoldWeight, ct) ?? 0;
+
+        var goldStockWeight = await db.JewelleryItems
+            .Where(i => i.IsActive && i.QuantityInStock > 0 && i.Metal.MetalType == MetalType.Gold)
+            .SumAsync(i => (decimal?)(i.NetWeight * i.QuantityInStock), ct) ?? 0;
+
+        var silverStockWeight = await db.JewelleryItems
+            .Where(i => i.IsActive && i.QuantityInStock > 0 && i.Metal.MetalType == MetalType.Silver)
+            .SumAsync(i => (decimal?)(i.NetWeight * i.QuantityInStock), ct) ?? 0;
 
         var totalItems = await db.JewelleryItems.CountAsync(ct);
         var inStockItems = await db.JewelleryItems.CountAsync(i => i.QuantityInStock > 0, ct);
@@ -220,11 +253,18 @@ public class ReportsController : BaseController
             .Where(i => i.InvoiceType == InvoiceType.Sale)
             .OrderByDescending(i => i.InvoiceDate)
             .Take(5)
-            .Select(i => new { i.InvoiceNumber, CustomerName = i.Customer != null ? $"{i.Customer.FirstName} {i.Customer.LastName}" : "Walk-in", i.TotalAmount, i.Status, i.InvoiceDate })
+            .Select(i => new DashboardInvoiceDto
+            {
+                InvoiceNumber = i.InvoiceNumber,
+                CustomerName = i.Customer != null ? $"{i.Customer.FirstName} {i.Customer.LastName}" : "Walk-in",
+                TotalAmount = i.TotalAmount,
+                Status = i.Status,
+                InvoiceDate = i.InvoiceDate
+            })
             .AsNoTracking()
             .ToListAsync(ct);
 
-        return OkResult(new
+        return OkResult(new DashboardDto
         {
             TodaySales = todaySales,
             MonthSales = monthSales,
@@ -233,6 +273,11 @@ public class ReportsController : BaseController
             TotalCustomers = totalCustomers,
             PendingRepairs = pendingRepairs,
             PendingPrintJobs = pendingPrintJobs,
+            TodayGoldWeightSold = todayGoldWeightSold,
+            MonthGoldWeightSold = monthGoldWeightSold,
+            GoldStockWeight = goldStockWeight,
+            SilverStockWeight = silverStockWeight,
+            TodayOldGoldWeight = todayOldGoldWeight,
             RecentInvoices = recentInvoices
         });
     }

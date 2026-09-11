@@ -22,6 +22,7 @@ public class SalesByDayDto
     public DateTime Date { get; set; }
     public int InvoiceCount { get; set; }
     public decimal Amount { get; set; }
+    public decimal GoldWeight { get; set; }
 }
 
 public class SalesByCategoryDto
@@ -93,4 +94,30 @@ public class ReportFilterRequest
     public Guid? MetalId { get; set; }
     public Guid? SupplierId { get; set; }
     public Guid? CustomerId { get; set; }
+}
+
+public class DashboardDto
+{
+    public decimal TodaySales { get; set; }
+    public decimal MonthSales { get; set; }
+    public int TotalItems { get; set; }
+    public int InStockItems { get; set; }
+    public int TotalCustomers { get; set; }
+    public int PendingRepairs { get; set; }
+    public int PendingPrintJobs { get; set; }
+    public decimal TodayGoldWeightSold { get; set; }
+    public decimal MonthGoldWeightSold { get; set; }
+    public decimal GoldStockWeight { get; set; }
+    public decimal SilverStockWeight { get; set; }
+    public decimal TodayOldGoldWeight { get; set; }
+    public IEnumerable<DashboardInvoiceDto> RecentInvoices { get; set; } = Enumerable.Empty<DashboardInvoiceDto>();
+}
+
+public class DashboardInvoiceDto
+{
+    public string InvoiceNumber { get; set; } = string.Empty;
+    public string CustomerName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public InvoiceStatus Status { get; set; }
+    public DateTime InvoiceDate { get; set; }
 }
