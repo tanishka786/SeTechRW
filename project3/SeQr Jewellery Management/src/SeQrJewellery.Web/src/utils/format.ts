@@ -8,6 +8,26 @@ export const fmtCurrency = (amount: number, symbol = '₹') =>
   `${symbol}${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export const fmtWeight = (grams: number) => `${grams.toFixed(3)}g`
+export const fmtCarat = (ct: number) => `${ct.toFixed(ct % 1 === 0 ? 0 : 2)}ct`
+
+export function fmtStoneSpecs(item: {
+  stoneCarat?: number | null; stoneCut?: string; stoneClarity?: string; stoneColor?: string;
+  certificateLab?: string; certificateNumber?: string; stoneSpecs?: string
+}): string | null {
+  if (item.stoneSpecs) return item.stoneSpecs
+  const parts: string[] = []
+  if (item.stoneCarat && item.stoneCarat > 0) parts.push(fmtCarat(item.stoneCarat))
+  if (item.stoneCut) parts.push(item.stoneCut)
+  if (item.stoneClarity) parts.push(item.stoneClarity)
+  if (item.stoneColor) parts.push(item.stoneColor)
+  const lab = item.certificateLab?.trim()
+  const id = item.certificateNumber?.trim()
+  if (lab || id) {
+    const cert = lab && id && !id.toUpperCase().startsWith(lab.toUpperCase()) ? `${lab} ${id}` : (id || lab)
+    if (cert) parts.push(`· ${cert}`)
+  }
+  return parts.length ? parts.join(' ') : null
+}
 export const fmtDate = (d?: string) => { if (!d) return '—'; try { return format(parseISO(d), 'dd/MM/yyyy') } catch { return d } }
 export const fmtDateTime = (d?: string) => { if (!d) return '—'; try { return format(parseISO(d), 'dd/MM/yyyy HH:mm') } catch { return d } }
 

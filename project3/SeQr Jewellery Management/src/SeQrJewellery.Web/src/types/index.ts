@@ -42,6 +42,7 @@ export interface JewelleryItem {
   categoryId: string; categoryName: string; metalId: string; metalName: string;
   purityId: string; purityName: string; supplierId?: string; supplierName?: string;
   grossWeight: number; netWeight: number; stoneWeight: number; wastagePercent: number;
+  stoneCarat?: number | null; stoneCut?: string; stoneClarity?: string; stoneColor?: string; certificateLab?: string;
   metalRate: number; metalValue: number; makingCharges: number; makingChargesPercent: number;
   makingChargeType: MakingChargeType; makingChargeValue: number;
   stoneCharges: number; otherCharges: number; discount: number; taxPercent: number; taxAmount: number;
@@ -66,6 +67,7 @@ export interface CreateJewelleryItemRequest {
   sku?: string; name: string; description?: string;
   categoryId: string; metalId: string; purityId: string; supplierId?: string;
   grossWeight: number; netWeight: number; stoneWeight: number; wastagePercent: number;
+  stoneCarat?: number | null; stoneCut?: string; stoneClarity?: string; stoneColor?: string; certificateLab?: string;
   metalRate: number; makingCharges: number; makingChargesPercent: number;
   makingChargeType: MakingChargeType; makingChargeValue: number;
   stoneCharges: number; otherCharges: number; discount: number; taxPercent: number;
@@ -116,7 +118,8 @@ export interface TagScanResult {
   jewelleryItemId?: string | null; sku: string; name: string; category: string; metal: string; purity: string;
   grossWeight: number; netWeight: number; metalRate?: number; sellingPrice: number; livePriced?: boolean; quantityInStock: number;
   matchedValue: string; matchedBy: string; barcodeValue: string; qrCodeValue?: string; epc?: string; epcHex?: string;
-  hallmarkNumber?: string; certificateNumber?: string
+  hallmarkNumber?: string; certificateNumber?: string;
+  stoneCarat?: number | null; stoneCut?: string; stoneClarity?: string; stoneColor?: string; certificateLab?: string; stoneSpecs?: string;
 }
 export interface StockTagLookup {
   id?: string; barcodeValue?: string; qrCodeValue?: string; epc?: string; epcHex?: string;

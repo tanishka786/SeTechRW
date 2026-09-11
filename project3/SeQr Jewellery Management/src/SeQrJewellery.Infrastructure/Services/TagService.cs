@@ -84,7 +84,13 @@ public class TagService : ITagService
             EPC = tag.EPC,
             EPCHex = tag.EPCHex,
             HallmarkNumber = item.HallmarkNumber,
-            CertificateNumber = item.CertificateNumber
+            CertificateNumber = item.CertificateNumber,
+            StoneCarat = item.StoneCarat,
+            StoneCut = item.StoneCut,
+            StoneClarity = item.StoneClarity,
+            StoneColor = item.StoneColor,
+            CertificateLab = item.CertificateLab,
+            StoneSpecs = StoneSpecHelper.Format(item.StoneCarat, item.StoneCut, item.StoneClarity, item.StoneColor, item.CertificateLab, item.CertificateNumber)
         };
     }
 

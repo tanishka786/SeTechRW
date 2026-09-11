@@ -78,6 +78,11 @@ public class TenantDbContext : DbContext, ITenantDbContext
             e.Property(i => i.GrossWeight).HasPrecision(10, 3);
             e.Property(i => i.NetWeight).HasPrecision(10, 3);
             e.Property(i => i.StoneWeight).HasPrecision(10, 3);
+            e.Property(i => i.StoneCarat).HasPrecision(8, 3);
+            e.Property(i => i.StoneCut).HasMaxLength(40);
+            e.Property(i => i.StoneClarity).HasMaxLength(20);
+            e.Property(i => i.StoneColor).HasMaxLength(30);
+            e.Property(i => i.CertificateLab).HasMaxLength(20);
             e.Property(i => i.MetalRate).HasPrecision(18, 4);
             e.Property(i => i.MetalValue).HasPrecision(18, 2);
             e.Property(i => i.MakingCharges).HasPrecision(18, 2);

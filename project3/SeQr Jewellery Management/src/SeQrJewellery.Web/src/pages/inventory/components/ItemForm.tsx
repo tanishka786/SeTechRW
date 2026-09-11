@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ScanBarcode } from 'lucide-react'
+import { ScanBarcode, Gem } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { inventoryApi, catalogApi, tagsApi, mediaApi } from '../../../api'
 import { Input, Select, TextArea } from '../../../components/ui/Input'
@@ -18,6 +18,11 @@ const makingTypeOptions = [
   { value: String(MakingChargeType.PercentOfMetalRate), label: '% of metal value' },
   { value: String(MakingChargeType.PerGramAmount), label: '₹ per gram × weight' },
 ]
+
+const STONE_CUTS = ['Ideal', 'Excellent', 'Very Good', 'Good', 'Fair', 'Poor']
+const STONE_CLARITY = ['FL', 'IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'SI3', 'I1', 'I2', 'I3']
+const STONE_COLORS = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'Fancy Yellow', 'Fancy Pink', 'Fancy Blue']
+const CERT_LABS = ['GIA', 'IGI', 'HRD', 'SGL', 'GII', 'Other']
 
 function computePreview(d: Partial<CreateJewelleryItemRequest>) {
   const net = Number(d.netWeight) || 0
@@ -84,7 +89,10 @@ export default function ItemForm({ item, onSuccess }: Props) {
       discount: item.discount, taxPercent: item.taxPercent, costPrice: item.costPrice,
       initialStock: item.quantityInStock, isBISCertified: item.isBISCertified, isConsignment: false,
       location: item.location, size: item.size, hallmarkNumber: item.hallmarkNumber,
-      certificateNumber: item.certificateNumber, design: item.design, style: item.style,
+      certificateNumber: item.certificateNumber, certificateLab: item.certificateLab,
+      stoneCarat: item.stoneCarat ?? undefined, stoneCut: item.stoneCut ?? '',
+      stoneClarity: item.stoneClarity ?? '', stoneColor: item.stoneColor ?? '',
+      design: item.design, style: item.style,
     } : {
       grossWeight: 0, netWeight: 0, stoneWeight: 0, wastagePercent: 3,
       metalRate: 6500, makingCharges: 0, makingChargesPercent: 0,
@@ -146,6 +154,11 @@ export default function ItemForm({ item, onSuccess }: Props) {
     setValue('grossWeight', existing.grossWeight)
     setValue('netWeight', existing.netWeight)
     setValue('stoneWeight', existing.stoneWeight)
+    setValue('stoneCarat', existing.stoneCarat ?? undefined)
+    setValue('stoneCut', existing.stoneCut ?? '')
+    setValue('stoneClarity', existing.stoneClarity ?? '')
+    setValue('stoneColor', existing.stoneColor ?? '')
+    setValue('certificateLab', existing.certificateLab ?? '')
     setValue('wastagePercent', existing.wastagePercent)
     setValue('metalRate', existing.metalRate)
     setValue('makingCharges', existing.makingCharges)
@@ -326,6 +339,11 @@ export default function ItemForm({ item, onSuccess }: Props) {
       ...d,
       sku: d.sku?.trim() ? d.sku.trim() : undefined,
       mapTagValue: d.mapTagValue?.trim() ? d.mapTagValue.trim() : undefined,
+      stoneCarat: Number(d.stoneCarat) > 0 ? Number(d.stoneCarat) : 0,
+      stoneCut: d.stoneCut ?? '',
+      stoneClarity: d.stoneClarity ?? '',
+      stoneColor: d.stoneColor ?? '',
+      certificateLab: d.certificateLab ?? '',
       makingChargeType: type,
       makingChargeValue: value,
       makingCharges: type === MakingChargeType.Lumpsum ? value : 0,
@@ -585,8 +603,66 @@ export default function ItemForm({ item, onSuccess }: Props) {
       <div className="grid grid-cols-4 gap-4">
         <Input label="Gross Weight (g) *" type="number" step="0.001" {...register('grossWeight', { required: 'Required', valueAsNumber: true })} error={errors.grossWeight?.message} />
         <Input label="Net Weight (g)" type="number" step="0.001" {...register('netWeight', { valueAsNumber: true })} />
-        <Input label="Stone Weight (g)" type="number" step="0.001" {...register('stoneWeight', { valueAsNumber: true })} />
+        <Input
+          label="Stone Weight (g)"
+          type="number"
+          step="0.001"
+          {...register('stoneWeight', {
+            valueAsNumber: true,
+            onChange: e => {
+              const grams = Number(e.target.value)
+              if (grams > 0 && !(Number(watch('stoneCarat')) > 0))
+                setValue('stoneCarat', Math.round(grams / 0.2 * 1000) / 1000)
+            },
+          })}
+        />
         <Input label="Wastage %" type="number" step="0.1" {...register('wastagePercent', { valueAsNumber: true })} />
+      </div>
+
+      <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-4 space-y-3">
+        <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+          <Gem size={16} className="text-violet-700" /> Diamond / stone specs
+        </p>
+        <p className="text-xs text-gray-500">4Cs for the centre stone. 1 carat = 0.2 g. Lab + report ID is the GIA/IGI certificate.</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Input
+            label="Carat"
+            type="number"
+            step="0.01"
+            placeholder="e.g. 0.50"
+            {...register('stoneCarat', {
+              valueAsNumber: true,
+              onChange: e => {
+                const ct = Number(e.target.value)
+                if (ct > 0 && !(Number(watch('stoneWeight')) > 0))
+                  setValue('stoneWeight', Math.round(ct * 0.2 * 1000) / 1000)
+              },
+            })}
+          />
+          <Select
+            label="Cut"
+            options={[{ value: '', label: '—' }, ...STONE_CUTS.map(v => ({ value: v, label: v }))]}
+            {...register('stoneCut')}
+          />
+          <Select
+            label="Clarity"
+            options={[{ value: '', label: '—' }, ...STONE_CLARITY.map(v => ({ value: v, label: v }))]}
+            {...register('stoneClarity')}
+          />
+          <Select
+            label="Color"
+            options={[{ value: '', label: '—' }, ...STONE_COLORS.map(v => ({ value: v, label: v }))]}
+            {...register('stoneColor')}
+          />
+          <Select
+            label="Lab"
+            options={[{ value: '', label: '—' }, ...CERT_LABS.map(v => ({ value: v, label: v }))]}
+            {...register('certificateLab')}
+          />
+          <div className="md:col-span-3">
+            <Input label="GIA / IGI ID" placeholder="Report number" {...register('certificateNumber')} />
+          </div>
+        </div>
       </div>
 
       <div className="rounded-lg border border-gray-200 p-4 space-y-3">
@@ -626,7 +702,7 @@ export default function ItemForm({ item, onSuccess }: Props) {
         <div><span className="text-gray-500 block text-xs">Selling Price</span><span className="font-semibold text-amber-700">₹{preview.selling.toFixed(2)}</span></div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {bulkMode ? (
           <Input label="Stock per Piece" value="1" disabled />
         ) : (
@@ -637,9 +713,6 @@ export default function ItemForm({ item, onSuccess }: Props) {
           />
         )}
         <Input label="Hallmark No." {...register('hallmarkNumber')} />
-        <Input label="Certificate No." {...register('certificateNumber')} />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
         <Input label="Size" placeholder="e.g. 18 (ring), 16 inch" {...register('size')} />
         <Input label="Location" placeholder="Shelf/Drawer location" {...register('location')} />
       </div>

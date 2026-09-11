@@ -17,6 +17,16 @@ public class JewelleryItem : BaseEntity
     public decimal GrossWeight { get; set; } // Total weight in grams
     public decimal NetWeight { get; set; } // Metal weight (excluding stones)
     public decimal StoneWeight { get; set; } = 0;
+    /// <summary>Center / primary stone weight in carats (1 ct = 0.2 g).</summary>
+    public decimal? StoneCarat { get; set; }
+    /// <summary>Cut grade: Ideal, Excellent, Very Good, Good, Fair, Poor.</summary>
+    public string? StoneCut { get; set; }
+    /// <summary>Clarity: FL, IF, VVS1, VS1, SI1, etc.</summary>
+    public string? StoneClarity { get; set; }
+    /// <summary>Diamond color grade (D–Z or fancy). Separate from item metal Color.</summary>
+    public string? StoneColor { get; set; }
+    /// <summary>Certifying lab: GIA, IGI, HRD, SGL, etc.</summary>
+    public string? CertificateLab { get; set; }
     public decimal WastagePercent { get; set; } = 0;
     public decimal WastageWeight { get; set; } = 0;
 
@@ -54,7 +64,7 @@ public class JewelleryItem : BaseEntity
     public string? Occasion { get; set; }
     public string? Gender { get; set; }
     public string? Collection { get; set; }
-    public string? CertificateNumber { get; set; } // BIS/IGI/GIA certificate
+    public string? CertificateNumber { get; set; } // GIA/IGI/BIS report ID
     public string? HallmarkNumber { get; set; }
     public bool IsBISCertified { get; set; } = false;
     public bool IsConsignment { get; set; } = false;

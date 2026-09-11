@@ -45,6 +45,12 @@ public class TagScanResultDto
     public string? EPCHex { get; set; }
     public string? HallmarkNumber { get; set; }
     public string? CertificateNumber { get; set; }
+    public decimal? StoneCarat { get; set; }
+    public string? StoneCut { get; set; }
+    public string? StoneClarity { get; set; }
+    public string? StoneColor { get; set; }
+    public string? CertificateLab { get; set; }
+    public string? StoneSpecs { get; set; }
     public string? ImageUrl { get; set; }
 }
 

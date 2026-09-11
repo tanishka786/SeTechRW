@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { ScanLine, Tag, Printer, ShoppingBag, CheckCircle, AlertCircle } from 'lucide-react'
 import { tagsApi, printQueueApi } from '../../api'
-import { fmtCurrency, fmtWeight } from '../../utils/format'
+import { fmtCurrency, fmtWeight, fmtStoneSpecs } from '../../utils/format'
 import { TagType } from '../../types'
 import type { TagScanResult } from '../../types'
 import Button from '../../components/ui/Button'
@@ -113,8 +113,8 @@ export default function ScanPage() {
                     ['SKU', result.sku],
                     ['Gross Weight', fmtWeight(result.grossWeight)],
                     ['Net Weight', fmtWeight(result.netWeight)],
+                    ...(fmtStoneSpecs(result) ? [['Diamond', fmtStoneSpecs(result)!]] as [string, string][] : []),
                     ['Hallmark', result.hallmarkNumber ?? '—'],
-                    ['Certificate', result.certificateNumber ?? '—'],
                     ['In Stock', result.quantityInStock.toString()],
                   ] as [string, string][] : []),
                 ].map(([l, v]) => (

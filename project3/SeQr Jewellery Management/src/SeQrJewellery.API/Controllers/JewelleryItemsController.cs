@@ -52,7 +52,9 @@ public class JewelleryItemsController : BaseController
             var term = filter.SearchTerm.ToLower();
             query = query.Where(i => i.SKU.ToLower().Contains(term) ||
                 i.Name.ToLower().Contains(term) ||
-                (i.Description != null && i.Description.ToLower().Contains(term)));
+                (i.Description != null && i.Description.ToLower().Contains(term)) ||
+                (i.CertificateNumber != null && i.CertificateNumber.ToLower().Contains(term)) ||
+                (i.CertificateLab != null && i.CertificateLab.ToLower().Contains(term)));
         }
 
         if (filter.CategoryId.HasValue)
@@ -282,6 +284,11 @@ public class JewelleryItemsController : BaseController
         if (request.GrossWeight.HasValue) item.GrossWeight = request.GrossWeight.Value;
         if (request.NetWeight.HasValue) item.NetWeight = request.NetWeight.Value;
         if (request.StoneWeight.HasValue) item.StoneWeight = request.StoneWeight.Value;
+        if (request.StoneCarat.HasValue) item.StoneCarat = request.StoneCarat.Value > 0 ? request.StoneCarat : null;
+        if (request.StoneCut != null) item.StoneCut = EmptyToNull(request.StoneCut);
+        if (request.StoneClarity != null) item.StoneClarity = EmptyToNull(request.StoneClarity);
+        if (request.StoneColor != null) item.StoneColor = EmptyToNull(request.StoneColor);
+        if (request.CertificateLab != null) item.CertificateLab = EmptyToNull(request.CertificateLab);
         if (request.WastagePercent.HasValue) item.WastagePercent = request.WastagePercent.Value;
         if (request.MetalRate.HasValue) item.MetalRate = request.MetalRate.Value;
         if (request.MakingCharges.HasValue) item.MakingCharges = request.MakingCharges.Value;
@@ -603,6 +610,11 @@ public class JewelleryItemsController : BaseController
             GrossWeight = request.GrossWeight,
             NetWeight = request.NetWeight,
             StoneWeight = request.StoneWeight,
+            StoneCarat = request.StoneCarat is > 0 ? request.StoneCarat : null,
+            StoneCut = EmptyToNull(request.StoneCut),
+            StoneClarity = EmptyToNull(request.StoneClarity),
+            StoneColor = EmptyToNull(request.StoneColor),
+            CertificateLab = EmptyToNull(request.CertificateLab),
             WastagePercent = request.WastagePercent,
             WastageWeight = request.NetWeight * request.WastagePercent / 100,
             MetalRate = request.MetalRate,
@@ -666,6 +678,11 @@ public class JewelleryItemsController : BaseController
         if (request.GrossWeight > 0) item.GrossWeight = request.GrossWeight;
         if (request.NetWeight > 0) item.NetWeight = request.NetWeight;
         item.StoneWeight = request.StoneWeight;
+        item.StoneCarat = request.StoneCarat is > 0 ? request.StoneCarat : null;
+        item.StoneCut = EmptyToNull(request.StoneCut);
+        item.StoneClarity = EmptyToNull(request.StoneClarity);
+        item.StoneColor = EmptyToNull(request.StoneColor);
+        item.CertificateLab = EmptyToNull(request.CertificateLab);
         item.WastagePercent = request.WastagePercent;
         if (request.MetalRate > 0) item.MetalRate = request.MetalRate;
         item.MakingChargeType = ResolveMakingChargeType(request);
@@ -818,6 +835,9 @@ public class JewelleryItemsController : BaseController
         return terms.Distinct().ToList();
     }
 
+    private static string? EmptyToNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static JewelleryItemDto MapToDto(JewelleryItem i) => new()
     {
         Id = i.Id,
@@ -835,6 +855,11 @@ public class JewelleryItemsController : BaseController
         GrossWeight = i.GrossWeight,
         NetWeight = i.NetWeight,
         StoneWeight = i.StoneWeight,
+        StoneCarat = i.StoneCarat,
+        StoneCut = i.StoneCut,
+        StoneClarity = i.StoneClarity,
+        StoneColor = i.StoneColor,
+        CertificateLab = i.CertificateLab,
         WastagePercent = i.WastagePercent,
         MetalRate = i.MetalRate,
         MetalValue = i.MetalValue,

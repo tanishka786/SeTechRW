@@ -19,6 +19,11 @@ public class JewelleryItemDto
     public decimal GrossWeight { get; set; }
     public decimal NetWeight { get; set; }
     public decimal StoneWeight { get; set; }
+    public decimal? StoneCarat { get; set; }
+    public string? StoneCut { get; set; }
+    public string? StoneClarity { get; set; }
+    public string? StoneColor { get; set; }
+    public string? CertificateLab { get; set; }
     public decimal WastagePercent { get; set; }
     public decimal MetalRate { get; set; }
     public decimal MetalValue { get; set; }
@@ -91,6 +96,11 @@ public class CreateJewelleryItemRequest
     public decimal GrossWeight { get; set; }
     public decimal NetWeight { get; set; }
     public decimal StoneWeight { get; set; } = 0;
+    public decimal? StoneCarat { get; set; }
+    public string? StoneCut { get; set; }
+    public string? StoneClarity { get; set; }
+    public string? StoneColor { get; set; }
+    public string? CertificateLab { get; set; }
     public decimal WastagePercent { get; set; } = 0;
     public decimal MetalRate { get; set; }
     public decimal MakingCharges { get; set; } = 0;
@@ -170,6 +180,11 @@ public class UpdateJewelleryItemRequest
     public decimal? GrossWeight { get; set; }
     public decimal? NetWeight { get; set; }
     public decimal? StoneWeight { get; set; }
+    public decimal? StoneCarat { get; set; }
+    public string? StoneCut { get; set; }
+    public string? StoneClarity { get; set; }
+    public string? StoneColor { get; set; }
+    public string? CertificateLab { get; set; }
     public decimal? WastagePercent { get; set; }
     public decimal? MetalRate { get; set; }
     public decimal? MakingCharges { get; set; }

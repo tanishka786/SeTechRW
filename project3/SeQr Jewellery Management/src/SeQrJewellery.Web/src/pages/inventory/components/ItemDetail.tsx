@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Tag, Printer, Plus } from 'lucide-react'
 import { tagsApi, printQueueApi, mediaApi } from '../../../api'
-import { fmtCurrency, fmtWeight, fmtDate } from '../../../utils/format'
+import { fmtCurrency, fmtWeight, fmtDate, fmtStoneSpecs, fmtCarat } from '../../../utils/format'
 import { TagType } from '../../../types'
 import type { JewelleryItem } from '../../../types'
 import Button from '../../../components/ui/Button'
@@ -36,13 +36,23 @@ export default function ItemDetail({ item }: { item: JewelleryItem }) {
     ['SKU', item.sku], ['Category', item.categoryName], ['Metal', item.metalName],
     ['Purity', item.purityName], ['Supplier', item.supplierName ?? '—'],
     ['Gross Weight', fmtWeight(item.grossWeight)], ['Net Weight', fmtWeight(item.netWeight)],
-    ['Stone Weight', fmtWeight(item.stoneWeight)], ['Metal Rate', fmtCurrency(item.metalRate) + '/g'],
+    ['Stone Weight', fmtWeight(item.stoneWeight)],
+    ...(item.stoneCarat || item.stoneCut || item.stoneClarity || item.stoneColor || item.certificateLab || item.certificateNumber
+      ? [
+          ['Carat', item.stoneCarat && item.stoneCarat > 0 ? fmtCarat(item.stoneCarat) : '—'],
+          ['Cut', item.stoneCut ?? '—'],
+          ['Clarity', item.stoneClarity ?? '—'],
+          ['Color (stone)', item.stoneColor ?? '—'],
+          ['Lab / report', fmtStoneSpecs({ certificateLab: item.certificateLab, certificateNumber: item.certificateNumber }) ?? '—'],
+        ] as [string, string][]
+      : []),
+    ['Metal Rate', fmtCurrency(item.metalRate) + '/g'],
     ['Metal Value', fmtCurrency(item.metalValue)], ['Making Charges', fmtCurrency(item.makingCharges)],
     ['Stone Charges', fmtCurrency(item.stoneCharges)], ['Tax', `${item.taxPercent}% (${fmtCurrency(item.taxAmount)})`],
     ['Discount', fmtCurrency(item.discount)], ['Cost Price', fmtCurrency(item.costPrice)],
     ['Selling Price', fmtCurrency(item.sellingPrice)], ['Stock', item.quantityInStock.toString()],
     ['Location', item.location ?? '—'], ['Hallmark', item.hallmarkNumber ?? '—'],
-    ['Certificate', item.certificateNumber ?? '—'], ['BIS Certified', item.isBISCertified ? 'Yes' : 'No'],
+    ['BIS Certified', item.isBISCertified ? 'Yes' : 'No'],
   ]
 
   return (

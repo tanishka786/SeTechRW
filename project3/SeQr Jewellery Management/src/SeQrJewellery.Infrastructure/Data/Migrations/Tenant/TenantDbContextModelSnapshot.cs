@@ -1045,6 +1045,10 @@ namespace SeQrJewellery.Infrastructure.Data.Migrations.Tenant
                     b.Property<string>("CertificateNumber")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CertificateLab")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("Collection")
                         .HasColumnType("nvarchar(max)");
 
@@ -1187,6 +1191,22 @@ namespace SeQrJewellery.Infrastructure.Data.Migrations.Tenant
                     b.Property<decimal>("StoneCharges")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("StoneCarat")
+                        .HasPrecision(8, 3)
+                        .HasColumnType("decimal(8,3)");
+
+                    b.Property<string>("StoneClarity")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("StoneColor")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("StoneCut")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
 
                     b.Property<decimal>("StoneWeight")
                         .HasPrecision(10, 3)

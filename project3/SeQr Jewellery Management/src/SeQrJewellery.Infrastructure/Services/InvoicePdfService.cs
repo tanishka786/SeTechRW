@@ -4,6 +4,7 @@ using QuestPDF.Infrastructure;
 using SeQrJewellery.Application.Interfaces;
 using SeQrJewellery.Domain.Entities.Tenant;
 using SeQrJewellery.Domain.Enums;
+using SeQrJewellery.Domain.Helpers;
 
 namespace SeQrJewellery.Infrastructure.Services;
 
@@ -163,6 +164,11 @@ public class InvoicePdfService : IInvoicePdfService
                         c.Item().Text(item.JewelleryItem?.SKU ?? "").FontSize(6.5f).FontColor(Colors.Grey.Darken1);
                         if (item.JewelleryItem?.IsBISCertified == true && s.ShowHallmark)
                             c.Item().Text($"Hallmark: {item.JewelleryItem.HallmarkNumber ?? "BIS"}").FontSize(6.5f).FontColor(Colors.Grey.Darken1);
+                        var stone = StoneSpecHelper.Format(
+                            item.JewelleryItem?.StoneCarat, item.JewelleryItem?.StoneCut, item.JewelleryItem?.StoneClarity,
+                            item.JewelleryItem?.StoneColor, item.JewelleryItem?.CertificateLab, item.JewelleryItem?.CertificateNumber);
+                        if (!string.IsNullOrEmpty(stone))
+                            c.Item().Text(stone).FontSize(6.5f).FontColor(Colors.Grey.Darken1);
                     });
                     table.Cell().Element(BodyCell).Text(s.DefaultHSNCode ?? "7113");
                     table.Cell().Element(BodyCell).Text(item.GrossWeight.ToString("0.000"));

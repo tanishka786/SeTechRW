@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Filter, Printer, Eye, Edit, Trash2, RefreshCw, Image as ImageIcon, Camera, X, ArrowUpDown } from 'lucide-react'
 import { inventoryApi, catalogApi, printQueueApi } from '../../api'
-import { fmtCurrency, fmtWeight, fmtDate } from '../../utils/format'
+import { fmtCurrency, fmtWeight, fmtDate, fmtStoneSpecs } from '../../utils/format'
 import { TagType } from '../../types'
 import Button from '../../components/ui/Button'
 import Combobox from '../../components/ui/Combobox'
@@ -149,6 +149,7 @@ export default function InventoryPage() {
         <div>
           <p className="font-medium text-gray-900">{r.name}</p>
           <p className="text-xs text-gray-500">{r.categoryName} · {r.metalName} {r.purityName}</p>
+          {fmtStoneSpecs(r) && <p className="text-[11px] text-violet-700 mt-0.5">{fmtStoneSpecs(r)}</p>}
         </div>
       </div>
     )},
