@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Download, CreditCard, Link as LinkIcon, Banknote } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useMutation } from '@tanstack/react-query'
-import { fmtCurrency, fmtDate, fmtDateTime, invoiceStatusLabel, invoiceStatusColor, invoiceTypeLabel, paymentMethodLabel } from '../../../utils/format'
+import { fmtCurrency, fmtDate, fmtDateTime, fmtWeight, invoiceStatusLabel, invoiceStatusColor, invoiceTypeLabel, paymentMethodLabel } from '../../../utils/format'
 import { InvoiceStatus, PaymentMethod } from '../../../types'
 import type { Invoice } from '../../../types'
 import Badge from '../../../components/ui/Badge'
@@ -207,11 +207,57 @@ export default function InvoiceDetail({ invoice, onPaid }: { invoice: Invoice; o
         </table>
       </div>
 
+      {(invoice.oldGoldItems?.length || invoice.oldGoldAmount > 0) && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+          <p className="font-semibold text-gray-800 text-sm">Old gold exchange voucher</p>
+          {invoice.oldGoldItems && invoice.oldGoldItems.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-amber-200">
+                  <th className="table-th text-left">Piece</th>
+                  <th className="table-th">Gross</th>
+                  <th className="table-th">Purity</th>
+                  <th className="table-th">Melt</th>
+                  <th className="table-th">Rate</th>
+                  <th className="table-th">Payable</th>
+                  <th className="table-th text-right">Credit</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-100">
+                {invoice.oldGoldItems.map(og => {
+                  const purity = (og.xrfPurityPercent ?? 0) > 0 ? og.xrfPurityPercent! : og.purityPercent
+                  return (
+                    <tr key={og.id}>
+                      <td className="table-td">
+                        <p className="font-medium">{og.description || 'Old gold'}</p>
+                        <p className="text-[11px] text-gray-500">Fine {fmtWeight(og.fineWeight)}</p>
+                      </td>
+                      <td className="table-td">{fmtWeight(og.grossWeight)}</td>
+                      <td className="table-td">
+                        {purity.toFixed(2)}%
+                        {og.xrfPurityPercent ? <span className="block text-[11px] text-gray-400">XRF</span> : null}
+                      </td>
+                      <td className="table-td">{og.meltingLossPercent.toFixed(1)}%</td>
+                      <td className="table-td">{fmtCurrency(og.buyingRatePerGram)}/g</td>
+                      <td className="table-td">{fmtWeight(og.payableWeight)}</td>
+                      <td className="table-td text-right font-medium text-green-700">{fmtCurrency(og.creditAmount)}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-sm text-gray-600">
+              {fmtWeight(invoice.oldGoldWeight ?? 0)} credited at {fmtCurrency(invoice.oldGoldAmount)}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="bg-amber-50 rounded-xl p-4 space-y-2">
         {[
           ['Subtotal', invoice.subTotal], ['Discount', -invoice.totalDiscount],
-          ['CGST', invoice.cgst], ['SGST', invoice.sgst],
-          ['Old Gold', -invoice.oldGoldAmount],
+          ['CGST', invoice.cgst], ['SGST', invoice.sgst], ['IGST', invoice.igst],
         ].map(([l, v]) => Number(v) !== 0 && (
           <div key={String(l)} className="flex justify-between text-sm">
             <span className="text-gray-600">{l}</span>
@@ -219,11 +265,17 @@ export default function InvoiceDetail({ invoice, onPaid }: { invoice: Invoice; o
           </div>
         ))}
         <div className="flex justify-between font-bold text-base pt-2 border-t border-amber-200">
-          <span>Total</span>
+          <span>Invoice Total</span>
           <span className="text-amber-700">{fmtCurrency(invoice.totalAmount)}</span>
         </div>
+        {invoice.oldGoldAmount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Old gold credit{invoice.oldGoldWeight ? ` (${fmtWeight(invoice.oldGoldWeight)})` : ''}</span>
+            <span className="font-medium text-green-700">− {fmtCurrency(invoice.oldGoldAmount)}</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Paid</span>
+          <span className="text-gray-500">Paid (incl. old gold)</span>
           <span className="text-green-600 font-medium">{fmtCurrency(invoice.paidAmount)}</span>
         </div>
         {invoice.balanceAmount > 0 && (

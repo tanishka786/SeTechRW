@@ -9,6 +9,8 @@ import Button from '../../../components/ui/Button'
 import { InvoiceType, PaymentMethod, GenderType, CustomerType } from '../../../types'
 import type { Invoice, CreateInvoiceRequest, CreateInvoiceItemRequest, CreatePaymentRequest } from '../../../types'
 import { fmtCurrency } from '../../../utils/format'
+import OldGoldCalculator from '../../../components/invoices/OldGoldCalculator'
+import type { OldGoldDraft } from '../../../components/invoices/OldGoldCalculator'
 import toast from 'react-hot-toast'
 
 interface Props { onSuccess: (invoice: Invoice) => void }
@@ -23,6 +25,7 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
     name?: string; price?: number; metalRate?: number; metal?: string; purity?: string
   })[]>([])
   const [payments, setPayments] = useState<CreatePaymentRequest[]>([])
+  const [oldGoldPieces, setOldGoldPieces] = useState<OldGoldDraft[]>([])
   const [scanTag, setScanTag] = useState('')
   const [scanning, setScanning] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
@@ -100,12 +103,20 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
 
   const itemTotal = items.reduce((s, i) => s + (i.price ?? 0) * i.quantity, 0)
   const payTotal = payments.reduce((s, p) => s + p.amount, 0)
+  const oldGoldCredit = oldGoldPieces.reduce((s, r) => s + r.creditAmount, 0)
+  const oldGoldWeight = oldGoldPieces.reduce((s, r) => s + (Number(r.grossWeight) || 0), 0)
+  const totalCredited = payTotal + oldGoldCredit
+  const balanceDue = Math.max(0, itemTotal - totalCredited)
 
   const onSubmit = (data: FormData) => {
     if (!items.length) { toast.error('Add at least one item'); return }
+    const pieces = oldGoldPieces.filter(r => r.grossWeight > 0 && r.buyingRatePerGram > 0)
     mutation.mutate({
       ...data,
       customerId: data.customerId || undefined,
+      oldGoldAmount: pieces.reduce((s, r) => s + r.creditAmount, 0),
+      oldGoldWeight: pieces.reduce((s, r) => s + r.grossWeight, 0),
+      oldGoldItems: pieces.map(({ fineWeight: _f, payableWeight: _pw, creditAmount: _c, customPurity: _cp, ...rest }) => rest),
       items: items.map(({ name: _n, price: _p, metalRate: _r, metal: _m, purity: _u, ...rest }) => rest),
       payments: payments.length ? payments : undefined,
     })
@@ -159,7 +170,6 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
             </div>
           )}
         </div>
-        <Input label="Old Gold Amount (₹)" type="number" step="0.01" {...register('oldGoldAmount', { valueAsNumber: true })} />
       </div>
 
       {/* Items */}
@@ -207,11 +217,13 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
         )}
       </div>
 
+      <OldGoldCalculator items={oldGoldPieces} onChange={setOldGoldPieces} />
+
       {/* Payments */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="font-semibold text-sm text-gray-700">Payments <span className="text-gray-400 font-normal">(optional)</span></p>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setPayments(p => [...p, { paymentMethod: PaymentMethod.Cash, amount: itemTotal - payTotal }])}>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setPayments(p => [...p, { paymentMethod: PaymentMethod.Cash, amount: Math.max(0, itemTotal - payTotal - oldGoldCredit) }])}>
             <Plus size={14} /> Add Payment
           </Button>
         </div>
@@ -248,19 +260,29 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
       </div>
 
       {/* Summary */}
-      <div className="bg-amber-50 rounded-xl p-4 flex justify-between items-center">
+      <div className="bg-amber-50 rounded-xl p-4 flex flex-wrap justify-between gap-4">
         <div>
           <p className="text-sm text-gray-500">Item Total</p>
           <p className="text-xl font-bold text-amber-700">{fmtCurrency(itemTotal)}</p>
           <p className="text-[11px] text-amber-800/70 mt-1">Billed at today’s live metal rates</p>
         </div>
+        {oldGoldCredit > 0 && (
+          <div className="text-right">
+            <p className="text-sm text-gray-500">Old gold credit</p>
+            <p className="text-xl font-bold text-green-700">{fmtCurrency(oldGoldCredit)}</p>
+            <p className="text-[11px] text-gray-500">{oldGoldWeight.toFixed(3)}g gross</p>
+          </div>
+        )}
         <div className="text-right">
           <p className="text-sm text-gray-500">Amount Paid</p>
-          <p className="text-xl font-bold text-green-600">{fmtCurrency(payTotal)}</p>
+          <p className="text-xl font-bold text-green-600">{fmtCurrency(totalCredited)}</p>
+          {oldGoldCredit > 0 && payTotal > 0 && (
+            <p className="text-[11px] text-gray-500">incl. {fmtCurrency(payTotal)} cash/other</p>
+          )}
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Balance</p>
-          <p className={`text-xl font-bold ${itemTotal - payTotal > 0 ? 'text-red-600' : 'text-green-600'}`}>{fmtCurrency(Math.max(0, itemTotal - payTotal))}</p>
+          <p className={`text-xl font-bold ${balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>{fmtCurrency(balanceDue)}</p>
         </div>
       </div>
 

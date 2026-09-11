@@ -147,8 +147,8 @@ export interface Invoice {
   invoiceDate: string; dueDate?: string; customerId?: string; customerName?: string; customerPhone?: string;
   supplierId?: string; supplierName?: string; subTotal: number; totalDiscount: number;
   totalTax: number; totalAmount: number; paidAmount: number; balanceAmount: number;
-  oldGoldAmount: number; cgst: number; sgst: number; igst: number; notes?: string;
-  items: InvoiceItem[]; payments: Payment[]; createdAt: string;
+  oldGoldAmount: number; oldGoldWeight?: number; cgst: number; sgst: number; igst: number; notes?: string;
+  items: InvoiceItem[]; payments: Payment[]; oldGoldItems?: OldGoldExchangeItem[]; createdAt: string;
 }
 
 export interface InvoiceItem {
@@ -166,7 +166,17 @@ export interface Payment {
 export interface CreateInvoiceRequest {
   invoiceType: InvoiceType; invoiceDate: string; dueDate?: string; customerId?: string; supplierId?: string;
   oldGoldAmount: number; oldGoldWeight: number; isIGST: boolean; notes?: string; terms?: string;
-  items: CreateInvoiceItemRequest[]; payments?: CreatePaymentRequest[];
+  items: CreateInvoiceItemRequest[]; oldGoldItems?: CreateOldGoldExchangeItem[]; payments?: CreatePaymentRequest[];
+}
+
+export interface CreateOldGoldExchangeItem {
+  description?: string; grossWeight: number; purityPercent: number; xrfPurityPercent?: number;
+  meltingLossPercent: number; buyingRatePerGram: number;
+}
+
+export interface OldGoldExchangeItem {
+  id: string; description: string; grossWeight: number; purityPercent: number; xrfPurityPercent?: number | null;
+  meltingLossPercent: number; buyingRatePerGram: number; fineWeight: number; payableWeight: number; creditAmount: number;
 }
 
 export interface CreateInvoiceItemRequest { jewelleryItemId: string; tagValue?: string; quantity: number; overridePrice?: number; discount?: number }

@@ -18,6 +18,7 @@ public class TenantDbContext : DbContext, ITenantDbContext
     public DbSet<Customer> Customers { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceItem> InvoiceItems { get; set; }
+    public DbSet<InvoiceOldGoldItem> InvoiceOldGoldItems { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<StockMovement> StockMovements { get; set; }
     public DbSet<PrintQueue> PrintQueues { get; set; }
@@ -155,6 +156,22 @@ public class TenantDbContext : DbContext, ITenantDbContext
 
             e.HasOne(i => i.Customer).WithMany(c => c.Invoices).HasForeignKey(i => i.CustomerId).IsRequired(false);
             e.HasOne(i => i.Supplier).WithMany(s => s.Invoices).HasForeignKey(i => i.SupplierId).IsRequired(false);
+        });
+
+        modelBuilder.Entity<InvoiceOldGoldItem>(e =>
+        {
+            e.ToTable("InvoiceOldGoldItems");
+            e.Property(x => x.Description).HasMaxLength(300);
+            e.Property(x => x.GrossWeight).HasPrecision(10, 3);
+            e.Property(x => x.PurityPercent).HasPrecision(6, 2);
+            e.Property(x => x.XrfPurityPercent).HasPrecision(6, 2);
+            e.Property(x => x.MeltingLossPercent).HasPrecision(6, 2);
+            e.Property(x => x.BuyingRatePerGram).HasPrecision(18, 4);
+            e.Property(x => x.FineWeight).HasPrecision(10, 3);
+            e.Property(x => x.PayableWeight).HasPrecision(10, 3);
+            e.Property(x => x.CreditAmount).HasPrecision(18, 2);
+            e.HasOne(x => x.Invoice).WithMany(i => i.OldGoldItems).HasForeignKey(x => x.InvoiceId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<InvoiceItem>(e =>

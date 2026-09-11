@@ -45,6 +45,12 @@ export default function InvoicesPage() {
     placeholderData: p => p,
   })
 
+  const openInvoice = async (invoice: Invoice) => {
+    setViewInvoice(invoice)
+    try { setViewInvoice(await invoicesApi.getById(invoice.id)) }
+    catch { /* list row is enough until detail loads */ }
+  }
+
   const cancelMutation = useMutation({
     mutationFn: invoicesApi.cancel,
     onSuccess: () => { toast.success('Invoice cancelled'); qc.invalidateQueries({ queryKey: ['invoices'] }) },
@@ -76,7 +82,7 @@ export default function InvoicesPage() {
       key: 'actions', header: '',
       render: (r: Invoice) => (
         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-          <button onClick={() => setViewInvoice(r)} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg"><Eye size={15} /></button>
+          <button onClick={() => openInvoice(r)} className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg"><Eye size={15} /></button>
           {r.status !== InvoiceStatus.Paid && r.status !== InvoiceStatus.Cancelled && (
             <button onClick={() => setPayInvoice(r)} className="p-1.5 hover:bg-green-50 text-green-600 rounded-lg"><CreditCard size={15} /></button>
           )}
@@ -120,7 +126,7 @@ export default function InvoicesPage() {
       </div>
 
       <div className="card overflow-hidden">
-        <Table data={data?.items ?? []} columns={columns} loading={isLoading} onRowClick={setViewInvoice} emptyMessage="No invoices found" />
+        <Table data={data?.items ?? []} columns={columns} loading={isLoading} onRowClick={openInvoice} emptyMessage="No invoices found" />
         <Pagination currentPage={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} totalCount={data?.totalCount} pageSize={20} />
       </div>
 

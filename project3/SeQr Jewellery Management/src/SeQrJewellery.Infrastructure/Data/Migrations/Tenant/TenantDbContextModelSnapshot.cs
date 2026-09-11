@@ -715,6 +715,84 @@ namespace SeQrJewellery.Infrastructure.Data.Migrations.Tenant
                     b.ToTable("InvoiceItems");
                 });
 
+            modelBuilder.Entity("SeQrJewellery.Domain.Entities.Tenant.InvoiceOldGoldItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BuyingRatePerGram")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("CreditAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<decimal>("FineWeight")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("decimal(10,3)");
+
+                    b.Property<decimal>("GrossWeight")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("decimal(10,3)");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("MeltingLossPercent")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<decimal>("PayableWeight")
+                        .HasPrecision(10, 3)
+                        .HasColumnType("decimal(10,3)");
+
+                    b.Property<decimal>("PurityPercent")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("XrfPurityPercent")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("decimal(6,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceOldGoldItems");
+                });
+
             modelBuilder.Entity("SeQrJewellery.Domain.Entities.Tenant.InvoiceSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2530,6 +2608,17 @@ namespace SeQrJewellery.Infrastructure.Data.Migrations.Tenant
                     b.Navigation("JewelleryItem");
                 });
 
+            modelBuilder.Entity("SeQrJewellery.Domain.Entities.Tenant.InvoiceOldGoldItem", b =>
+                {
+                    b.HasOne("SeQrJewellery.Domain.Entities.Tenant.Invoice", "Invoice")
+                        .WithMany("OldGoldItems")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("SeQrJewellery.Domain.Entities.Tenant.ItemMedia", b =>
                 {
                     b.HasOne("SeQrJewellery.Domain.Entities.Tenant.JewelleryItem", "JewelleryItem")
@@ -2746,6 +2835,8 @@ namespace SeQrJewellery.Infrastructure.Data.Migrations.Tenant
             modelBuilder.Entity("SeQrJewellery.Domain.Entities.Tenant.Invoice", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("OldGoldItems");
 
                     b.Navigation("Payments");
                 });

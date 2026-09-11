@@ -6,6 +6,7 @@ using SeQrJewellery.Application.DTOs.Invoice;
 using SeQrJewellery.Application.Interfaces;
 using SeQrJewellery.Domain.Entities.Tenant;
 using SeQrJewellery.Domain.Enums;
+using SeQrJewellery.Domain.Helpers;
 using SeQrJewellery.Infrastructure.Data;
 using SeQrJewellery.Infrastructure.Services;
 
@@ -80,6 +81,7 @@ public class InvoicesController : BaseController
             .Include(i => i.Supplier)
             .Include(i => i.Items).ThenInclude(item => item.JewelleryItem)
             .Include(i => i.Payments)
+            .Include(i => i.OldGoldItems)
             .AsNoTracking()
             .FirstOrDefaultAsync(i => i.Id == id, ct);
 
@@ -109,6 +111,31 @@ public class InvoicesController : BaseController
             Notes = request.Notes,
             Terms = request.Terms
         };
+
+        if (request.OldGoldItems?.Any() == true)
+        {
+            foreach (var og in request.OldGoldItems.Where(x => x.GrossWeight > 0 && x.BuyingRatePerGram > 0))
+            {
+                var purity = og.XrfPurityPercent is > 0 ? og.XrfPurityPercent.Value : og.PurityPercent;
+                var (fine, payable, credit) = OldGoldExchangeHelper.Calculate(
+                    og.GrossWeight, purity, og.MeltingLossPercent, og.BuyingRatePerGram);
+                invoice.OldGoldItems.Add(new InvoiceOldGoldItem
+                {
+                    Description = string.IsNullOrWhiteSpace(og.Description) ? "Old gold" : og.Description.Trim(),
+                    GrossWeight = og.GrossWeight,
+                    PurityPercent = og.PurityPercent,
+                    XrfPurityPercent = og.XrfPurityPercent is > 0 ? og.XrfPurityPercent : null,
+                    MeltingLossPercent = og.MeltingLossPercent,
+                    BuyingRatePerGram = og.BuyingRatePerGram,
+                    FineWeight = fine,
+                    PayableWeight = payable,
+                    CreditAmount = credit
+                });
+            }
+
+            invoice.OldGoldWeight = invoice.OldGoldItems.Sum(x => x.GrossWeight);
+            invoice.OldGoldAmount = invoice.OldGoldItems.Sum(x => x.CreditAmount);
+        }
 
         foreach (var itemReq in request.Items)
         {
@@ -212,7 +239,8 @@ public class InvoicesController : BaseController
         var totalPaid = invoice.Payments.Sum(p => p.Amount) + invoice.OldGoldAmount;
         invoice.PaidAmount = totalPaid;
         invoice.BalanceAmount = invoice.TotalAmount - totalPaid;
-        invoice.Status = invoice.BalanceAmount <= 0 ? InvoiceStatus.Paid
+        if (invoice.BalanceAmount < 0) invoice.BalanceAmount = 0;
+        invoice.Status = invoice.BalanceAmount <= 0 && totalPaid > 0 ? InvoiceStatus.Paid
             : totalPaid > 0 ? InvoiceStatus.PartiallyPaid
             : InvoiceStatus.Confirmed;
 
@@ -277,6 +305,7 @@ public class InvoicesController : BaseController
             .Include(i => i.Payments)
             .Include(i => i.Customer)
             .Include(i => i.Items).ThenInclude(item => item.JewelleryItem)
+            .Include(i => i.OldGoldItems)
             .FirstOrDefaultAsync(i => i.Id == id, ct);
         if (invoice is null) return NotFoundResult($"Invoice {id} not found.");
         if (invoice.Status == InvoiceStatus.Cancelled)
@@ -336,6 +365,7 @@ public class InvoicesController : BaseController
             .Include(i => i.Payments)
             .Include(i => i.Customer)
             .Include(i => i.Items).ThenInclude(item => item.JewelleryItem)
+            .Include(i => i.OldGoldItems)
             .FirstOrDefaultAsync(i => i.Id == id, ct);
         if (invoice is null) return NotFoundResult($"Invoice {id} not found.");
 
@@ -456,6 +486,8 @@ public class InvoicesController : BaseController
             .Include(i => i.Customer)
             .Include(i => i.Supplier)
             .Include(i => i.Items).ThenInclude(item => item.JewelleryItem)
+            .Include(i => i.OldGoldItems)
+            .Include(i => i.Payments)
             .FirstOrDefaultAsync(i => i.Id == id, ct);
         if (invoice is null) return NotFoundResult($"Invoice {id} not found.");
 
@@ -513,6 +545,7 @@ public class InvoicesController : BaseController
         PaidAmount = i.PaidAmount,
         BalanceAmount = i.BalanceAmount,
         OldGoldAmount = i.OldGoldAmount,
+        OldGoldWeight = i.OldGoldWeight,
         CGST = i.CGST,
         SGST = i.SGST,
         IGST = i.IGST,
@@ -550,6 +583,19 @@ public class InvoicesController : BaseController
             UPITransactionId = p.UPITransactionId,
             Notes = p.Notes,
             IsRefunded = p.IsRefunded
+        }),
+        OldGoldItems = (i.OldGoldItems ?? []).Select(og => new OldGoldExchangeItemDto
+        {
+            Id = og.Id,
+            Description = og.Description,
+            GrossWeight = og.GrossWeight,
+            PurityPercent = og.PurityPercent,
+            XrfPurityPercent = og.XrfPurityPercent,
+            MeltingLossPercent = og.MeltingLossPercent,
+            BuyingRatePerGram = og.BuyingRatePerGram,
+            FineWeight = og.FineWeight,
+            PayableWeight = og.PayableWeight,
+            CreditAmount = og.CreditAmount
         }),
         CreatedAt = i.CreatedAt
     };

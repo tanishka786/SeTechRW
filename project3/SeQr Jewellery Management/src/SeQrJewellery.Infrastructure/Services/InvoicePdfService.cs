@@ -183,9 +183,19 @@ public class InvoicePdfService : IInvoicePdfService
                     {
                         c.Item().Background(Colors.Grey.Lighten4).Padding(6).Column(og =>
                         {
-                            og.Item().Text("Old Gold Exchange").Bold().FontSize(8);
-                            og.Item().Text($"Weight: {invoice.OldGoldWeight:0.000}g");
-                            og.Item().Text($"Credited Amount: ₹{invoice.OldGoldAmount:N2}");
+                            og.Item().Text("Old Gold Exchange Voucher").Bold().FontSize(8);
+                            if (invoice.OldGoldItems?.Count > 0)
+                            {
+                                foreach (var piece in invoice.OldGoldItems)
+                                {
+                                    var purity = piece.XrfPurityPercent ?? piece.PurityPercent;
+                                    og.Item().Text(
+                                        $"{piece.Description}: {piece.GrossWeight:0.000}g × {purity:0.##}% − {piece.MeltingLossPercent:0.##}% melt @ ₹{piece.BuyingRatePerGram:N2}/g = ₹{piece.CreditAmount:N2}"
+                                    ).FontSize(7);
+                                }
+                            }
+                            og.Item().Text($"Total weight: {invoice.OldGoldWeight:0.000}g").FontSize(7.5f);
+                            og.Item().Text($"Credited amount: ₹{invoice.OldGoldAmount:N2}").FontSize(7.5f).SemiBold();
                         });
                     }
 

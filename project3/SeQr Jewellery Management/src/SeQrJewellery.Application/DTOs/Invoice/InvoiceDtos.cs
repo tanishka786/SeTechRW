@@ -22,12 +22,14 @@ public class InvoiceDto
     public decimal PaidAmount { get; set; }
     public decimal BalanceAmount { get; set; }
     public decimal OldGoldAmount { get; set; }
+    public decimal OldGoldWeight { get; set; }
     public decimal CGST { get; set; }
     public decimal SGST { get; set; }
     public decimal IGST { get; set; }
     public string? Notes { get; set; }
     public IEnumerable<InvoiceItemDto> Items { get; set; } = Enumerable.Empty<InvoiceItemDto>();
     public IEnumerable<PaymentDto> Payments { get; set; } = Enumerable.Empty<PaymentDto>();
+    public IEnumerable<OldGoldExchangeItemDto> OldGoldItems { get; set; } = Enumerable.Empty<OldGoldExchangeItemDto>();
     public DateTime CreatedAt { get; set; }
 }
 
@@ -80,7 +82,32 @@ public class CreateInvoiceRequest
     public string? Notes { get; set; }
     public string? Terms { get; set; }
     public IEnumerable<CreateInvoiceItemRequest> Items { get; set; } = Enumerable.Empty<CreateInvoiceItemRequest>();
+    public IEnumerable<CreateOldGoldExchangeItemRequest>? OldGoldItems { get; set; }
     public IEnumerable<CreatePaymentRequest>? Payments { get; set; }
+}
+
+public class CreateOldGoldExchangeItemRequest
+{
+    public string? Description { get; set; }
+    public decimal GrossWeight { get; set; }
+    public decimal PurityPercent { get; set; }
+    public decimal? XrfPurityPercent { get; set; }
+    public decimal MeltingLossPercent { get; set; } = 1;
+    public decimal BuyingRatePerGram { get; set; }
+}
+
+public class OldGoldExchangeItemDto
+{
+    public Guid Id { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public decimal GrossWeight { get; set; }
+    public decimal PurityPercent { get; set; }
+    public decimal? XrfPurityPercent { get; set; }
+    public decimal MeltingLossPercent { get; set; }
+    public decimal BuyingRatePerGram { get; set; }
+    public decimal FineWeight { get; set; }
+    public decimal PayableWeight { get; set; }
+    public decimal CreditAmount { get; set; }
 }
 
 public class CreateInvoiceItemRequest

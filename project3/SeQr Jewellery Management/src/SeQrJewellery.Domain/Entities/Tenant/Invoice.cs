@@ -43,4 +43,5 @@ public class Invoice : BaseEntity
 
     public ICollection<InvoiceItem> Items { get; set; } = new List<InvoiceItem>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<InvoiceOldGoldItem> OldGoldItems { get; set; } = new List<InvoiceOldGoldItem>();
 }

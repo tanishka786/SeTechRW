@@ -15,6 +15,7 @@ public interface ITenantDbContext
     DbSet<Customer> Customers { get; set; }
     DbSet<Invoice> Invoices { get; set; }
     DbSet<InvoiceItem> InvoiceItems { get; set; }
+    DbSet<InvoiceOldGoldItem> InvoiceOldGoldItems { get; set; }
     DbSet<Payment> Payments { get; set; }
     DbSet<StockMovement> StockMovements { get; set; }
     DbSet<PrintQueue> PrintQueues { get; set; }
