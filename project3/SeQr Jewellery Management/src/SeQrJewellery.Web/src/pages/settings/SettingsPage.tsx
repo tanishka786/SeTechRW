@@ -278,7 +278,13 @@ function MetalsTab() {
   const updateMutation = useMutation({
     mutationFn: ({ metalId, purityId, rate }: { metalId: string; purityId: string; rate: number }) =>
       catalogApi.updateMetalRate(metalId, { purityId, ratePerGram: rate, source: 'Manual' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['metals'] }); setEditRate(null); toast.success('Rate updated') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['metals'] })
+      qc.invalidateQueries({ queryKey: ['live-metal-rates'] })
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+      setEditRate(null)
+      toast.success('Rate updated')
+    },
   })
 
   if (isLoading) return <div className="text-gray-400 text-sm">Loading…</div>

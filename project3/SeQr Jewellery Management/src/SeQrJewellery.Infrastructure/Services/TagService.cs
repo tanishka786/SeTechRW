@@ -61,6 +61,8 @@ public class TagService : ITagService
         }
 
         var item = tag.JewelleryItem;
+        var live = await LiveMetalRateService.ResolveAsync(db, item.MetalId, item.PurityId, ct);
+        var (_, _, _, liveSelling) = LiveMetalRateService.PriceItem(item, live.RatePerGram);
         return new TagScanResultDto
         {
             JewelleryItemId = item.Id,
@@ -71,7 +73,9 @@ public class TagService : ITagService
             Purity = item.Purity?.Name ?? "",
             GrossWeight = item.GrossWeight,
             NetWeight = item.NetWeight,
-            SellingPrice = item.SellingPrice,
+            MetalRate = live.RatePerGram,
+            SellingPrice = liveSelling,
+            LivePriced = true,
             QuantityInStock = item.QuantityInStock,
             MatchedValue = matchedValue,
             MatchedBy = matchedBy,

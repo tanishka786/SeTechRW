@@ -114,7 +114,7 @@ export interface JewelleryItemFilter {
 export interface JewelleryTag { id: string; jewelleryItemId?: string | null; referenceNumber?: number | null; barcodeValue: string; qrCodeValue?: string; epc?: string; epcHex?: string; tid?: string; isPrimary: boolean; isActive: boolean; isMapped?: boolean; lastScannedAt?: string; printCount: number; createdAt: string }
 export interface TagScanResult {
   jewelleryItemId?: string | null; sku: string; name: string; category: string; metal: string; purity: string;
-  grossWeight: number; netWeight: number; sellingPrice: number; quantityInStock: number;
+  grossWeight: number; netWeight: number; metalRate?: number; sellingPrice: number; livePriced?: boolean; quantityInStock: number;
   matchedValue: string; matchedBy: string; barcodeValue: string; qrCodeValue?: string; epc?: string; epcHex?: string;
   hallmarkNumber?: string; certificateNumber?: string
 }
@@ -213,6 +213,11 @@ export interface CreateRepairRequest {
 export interface Category { id: string; name: string; description?: string; parentCategoryId?: string; subCategories: Category[]; displayOrder: number }
 export interface Metal { id: string; name: string; metalType: number; symbol: string; currentMarketRate: number; rateUnit: string; purities: Purity[] }
 export interface Purity { id: string; metalId: string; name: string; purityPercentage: number; hallmarkCode?: string }
+export interface LiveMetalRate {
+  metalId: string; metalName: string; symbol: string; purityId?: string; purityName: string;
+  ratePerGram: number; previousRatePerGram?: number | null; changeAmount?: number | null;
+  lastUpdated?: string | null; source?: string | null
+}
 export interface Supplier { id: string; name: string; contactPerson?: string; email?: string; phone?: string; city?: string; gstNumber?: string }
 export interface LabelTemplate { id: string; name: string; tagType: TagType; bartenderTemplateName: string; isDefault: boolean; labelWidthMm: number; labelHeightMm: number }
 

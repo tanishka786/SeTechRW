@@ -40,6 +40,7 @@ export default function ItemForm({ item, onSuccess }: Props) {
   const qc = useQueryClient()
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: catalogApi.categories })
   const { data: metals } = useQuery({ queryKey: ['metals'], queryFn: catalogApi.metals })
+  const { data: liveRates } = useQuery({ queryKey: ['live-metal-rates'], queryFn: catalogApi.liveRates })
   const [tagInput, setTagInput] = useState('')
   const [tagLookup, setTagLookup] = useState<StockTagLookup | null>(null)
   const [tagChecking, setTagChecking] = useState(false)
@@ -95,6 +96,7 @@ export default function ItemForm({ item, onSuccess }: Props) {
   })
 
   const selectedMetalId = watch('metalId')
+  const selectedPurityId = watch('purityId')
   const selectedMetal = metals?.find(m => m.id === selectedMetalId)
   const purities = selectedMetal?.purities ?? []
   const mapTagValue = watch('mapTagValue')
@@ -104,8 +106,11 @@ export default function ItemForm({ item, onSuccess }: Props) {
   const makingType = Number(watch('makingChargeType')) || MakingChargeType.Lumpsum
 
   useEffect(() => {
-    if (selectedMetal && !isEdit && !existingSkuItem) setValue('metalRate', selectedMetal.currentMarketRate)
-  }, [selectedMetal, isEdit, setValue, existingSkuItem])
+    if (isEdit || existingSkuItem) return
+    const live = liveRates?.find(r => r.purityId === selectedPurityId)
+    if (live) setValue('metalRate', live.ratePerGram)
+    else if (selectedMetal) setValue('metalRate', selectedMetal.currentMarketRate)
+  }, [selectedMetal, selectedPurityId, liveRates, isEdit, setValue, existingSkuItem])
 
   // Debounced SKU suggestions (create mode only)
   useEffect(() => {

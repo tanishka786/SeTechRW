@@ -28,7 +28,9 @@ public class TagScanResultDto
     public string Purity { get; set; } = string.Empty;
     public decimal GrossWeight { get; set; }
     public decimal NetWeight { get; set; }
+    public decimal MetalRate { get; set; }
     public decimal SellingPrice { get; set; }
+    public bool LivePriced { get; set; }
     public int QuantityInStock { get; set; }
 
     /// <summary>The scanned key that matched.</summary>

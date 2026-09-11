@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SeQrJewellery.Domain.Entities.Tenant;
 using SeQrJewellery.Infrastructure.Data;
+using SeQrJewellery.Infrastructure.Services;
 
 namespace SeQrJewellery.API.Controllers;
 
@@ -46,6 +47,15 @@ public class CatalogController : BaseController
     }
 
     // ---- Metals ----
+
+    /// <summary>Current Gold 24K/22K/18K, Silver, and Platinum rates for the live ticker and billing.</summary>
+    [HttpGet("metals/live-rates")]
+    public async Task<IActionResult> GetLiveRates(CancellationToken ct)
+    {
+        var db = await _contextAccessor.GetContextAsync(ct);
+        var rates = await LiveMetalRateService.GetTickerRatesAsync(db, ct);
+        return OkResult(rates);
+    }
 
     [HttpGet("metals")]
     public async Task<IActionResult> GetMetals(CancellationToken ct)

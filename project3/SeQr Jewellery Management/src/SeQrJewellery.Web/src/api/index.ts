@@ -6,7 +6,7 @@ import type {
   SkuSuggestion,
   JewelleryTag, TagScanResult, AssignTagRequest, StockTagLookup, MapTagRequest, Customer, CreateCustomerRequest,
   Invoice, CreateInvoiceRequest, CreatePaymentRequest, PrintJob, CreatePrintJobRequest,
-  Repair, CreateRepairRequest, Category, Metal, Supplier, LabelTemplate,
+  Repair, CreateRepairRequest, Category, Metal, Supplier, LabelTemplate, LiveMetalRate,
   DashboardData, SalesReport, InventoryReport, MetalRate, RateHistoryItem, PagedResult, ApiResponse,
   InventoryAuditListItem, InventoryAuditReport, InventoryAuditStatus, ItemMedia,
   Lead, LeadDetail, CreateLeadRequest, UpdateLeadRequest, LeadFollowUp, CreateLeadFollowUpRequest, CrmPipelineSummary,
@@ -186,6 +186,7 @@ export const catalogApi = {
   createCategory: (req: { name: string; description?: string; parentCategoryId?: string; displayOrder?: number }) =>
     apiClient.post<ApiResponse<Category>>('/catalog/categories', req).then(unwrap),
   metals: () => apiClient.get<ApiResponse<Metal[]>>('/catalog/metals').then(unwrap),
+  liveRates: () => apiClient.get<ApiResponse<LiveMetalRate[]>>('/catalog/metals/live-rates').then(unwrap),
   updateMetalRate: (id: string, req: { purityId: string; ratePerGram: number; source?: string }) =>
     apiClient.put<ApiResponse<Metal>>(`/catalog/metals/${id}/rate`, req).then(unwrap),
   suppliers: () => apiClient.get<ApiResponse<Supplier[]>>('/catalog/suppliers').then(unwrap),

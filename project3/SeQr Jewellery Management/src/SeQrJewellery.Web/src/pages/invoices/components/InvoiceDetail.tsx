@@ -194,6 +194,9 @@ export default function InvoiceDetail({ invoice, onPaid }: { invoice: Invoice; o
                 <td className="table-td">
                   <p className="font-medium">{item.itemName}</p>
                   {item.tagValue && <p className="font-mono text-xs text-gray-400">{item.tagValue}</p>}
+                  {item.metalRate > 0 && (
+                    <p className="text-[11px] text-amber-700">Rate {fmtCurrency(item.metalRate)}/g</p>
+                  )}
                 </td>
                 <td className="table-td">{item.quantity}</td>
                 <td className="table-td">{item.grossWeight.toFixed(3)}g</td>

@@ -7,6 +7,7 @@ using SeQrJewellery.Application.Interfaces;
 using SeQrJewellery.Domain.Entities.Tenant;
 using SeQrJewellery.Domain.Enums;
 using SeQrJewellery.Infrastructure.Data;
+using SeQrJewellery.Infrastructure.Services;
 
 namespace SeQrJewellery.API.Controllers;
 
@@ -121,9 +122,27 @@ public class InvoicesController : BaseController
             if (request.InvoiceType == InvoiceType.Sale && jewelleryItem.QuantityInStock < itemReq.Quantity)
                 return BadRequestResult($"Insufficient stock for item {jewelleryItem.SKU}. Available: {jewelleryItem.QuantityInStock}");
 
-            var unitPrice = itemReq.OverridePrice ?? jewelleryItem.SellingPrice;
+            var live = await LiveMetalRateService.ResolveAsync(db, jewelleryItem.MetalId, jewelleryItem.PurityId, ct);
+            var (metalValue, makingCharges, liveTax, liveSelling) =
+                LiveMetalRateService.PriceItem(jewelleryItem, live.RatePerGram);
+
             var discount = itemReq.Discount ?? jewelleryItem.Discount;
-            var taxAmount = (unitPrice - discount) * jewelleryItem.TaxPercent / 100;
+            decimal unitPrice;
+            decimal taxAmount;
+            decimal totalPrice;
+            if (itemReq.OverridePrice.HasValue)
+            {
+                unitPrice = itemReq.OverridePrice.Value;
+                var perUnitTax = (unitPrice - discount) * jewelleryItem.TaxPercent / 100;
+                taxAmount = perUnitTax * itemReq.Quantity;
+                totalPrice = (unitPrice + perUnitTax - discount) * itemReq.Quantity;
+            }
+            else
+            {
+                unitPrice = liveSelling;
+                taxAmount = liveTax * itemReq.Quantity;
+                totalPrice = liveSelling * itemReq.Quantity;
+            }
 
             var lineItem = new InvoiceItem
             {
@@ -134,16 +153,16 @@ public class InvoicesController : BaseController
                 GrossWeight = jewelleryItem.GrossWeight,
                 NetWeight = jewelleryItem.NetWeight,
                 StoneWeight = jewelleryItem.StoneWeight,
-                MetalRate = jewelleryItem.MetalRate,
-                MetalValue = jewelleryItem.MetalValue,
-                MakingCharges = jewelleryItem.MakingCharges,
+                MetalRate = live.RatePerGram,
+                MetalValue = metalValue,
+                MakingCharges = makingCharges,
                 StoneCharges = jewelleryItem.StoneCharges,
                 OtherCharges = jewelleryItem.OtherCharges,
                 Discount = discount,
                 TaxPercent = jewelleryItem.TaxPercent,
-                TaxAmount = taxAmount * itemReq.Quantity,
+                TaxAmount = taxAmount,
                 UnitPrice = unitPrice,
-                TotalPrice = (unitPrice + taxAmount - discount) * itemReq.Quantity
+                TotalPrice = totalPrice
             };
 
             invoice.Items.Add(lineItem);

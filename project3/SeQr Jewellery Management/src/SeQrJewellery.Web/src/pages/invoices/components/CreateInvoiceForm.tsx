@@ -19,7 +19,9 @@ interface FormData {
 }
 
 export default function CreateInvoiceForm({ onSuccess }: Props) {
-  const [items, setItems] = useState<(CreateInvoiceItemRequest & { name?: string; price?: number })[]>([])
+  const [items, setItems] = useState<(CreateInvoiceItemRequest & {
+    name?: string; price?: number; metalRate?: number; metal?: string; purity?: string
+  })[]>([])
   const [payments, setPayments] = useState<CreatePaymentRequest[]>([])
   const [scanTag, setScanTag] = useState('')
   const [scanning, setScanning] = useState(false)
@@ -78,7 +80,16 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
       if (!r.jewelleryItemId) {
         toast.error('Tag is not mapped to an item yet')
       } else {
-        setItems(prev => [...prev, { jewelleryItemId: r.jewelleryItemId!, tagValue: r.matchedValue, quantity: 1, name: r.name, price: r.sellingPrice }])
+        setItems(prev => [...prev, {
+          jewelleryItemId: r.jewelleryItemId!,
+          tagValue: r.matchedValue,
+          quantity: 1,
+          name: r.name,
+          price: r.sellingPrice,
+          metalRate: r.metalRate,
+          metal: r.metal,
+          purity: r.purity,
+        }])
         setScanTag('')
       }
     } catch {
@@ -95,7 +106,7 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
     mutation.mutate({
       ...data,
       customerId: data.customerId || undefined,
-      items: items.map(({ name: _n, price: _p, ...rest }) => rest),
+      items: items.map(({ name: _n, price: _p, metalRate: _r, metal: _m, purity: _u, ...rest }) => rest),
       payments: payments.length ? payments : undefined,
     })
   }
@@ -175,6 +186,11 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
                 <div className="flex-1">
                   <p className="text-sm font-medium">{item.name}</p>
                   <p className="text-xs font-mono text-gray-500">{item.tagValue}</p>
+                  {item.metalRate != null && (
+                    <p className="text-[11px] text-amber-700 mt-0.5">
+                      Today’s {item.metal} {item.purity} rate {fmtCurrency(item.metalRate)}/g
+                    </p>
+                  )}
                 </div>
                 <input type="number" value={item.quantity} min={1}
                   onChange={e => setItems(prev => prev.map((it, j) => j === i ? { ...it, quantity: Number(e.target.value) } : it))}
@@ -236,6 +252,7 @@ export default function CreateInvoiceForm({ onSuccess }: Props) {
         <div>
           <p className="text-sm text-gray-500">Item Total</p>
           <p className="text-xl font-bold text-amber-700">{fmtCurrency(itemTotal)}</p>
+          <p className="text-[11px] text-amber-800/70 mt-1">Billed at today’s live metal rates</p>
         </div>
         <div className="text-right">
           <p className="text-sm text-gray-500">Amount Paid</p>
