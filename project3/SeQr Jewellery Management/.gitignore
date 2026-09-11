@@ -1,0 +1,47 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+[Bb]uild/
+[Ll]og/
+[Ll]ogs/
+*.nupkg
+*.snupkg
+project.lock.json
+artifacts/
+
+## Visual Studio
+.vs/
+*.rsuser
+*.dbmdl
+*.jfm
+
+## Publish / deploy output
+publish/
+
+## Node / frontend
+node_modules/
+dist/
+*.local
+.npm
+.pnpm-store/
+
+## OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*~
+
+## Secrets / env
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+/migration_main_log.txt
+/migration_tenant_log.txt
+/build_log.txt
+/build_log2.txt

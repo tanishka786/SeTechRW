@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SeQrJewellery.API/SeQrJewellery.API.csproj" />
+    <Project Path="src/SeQrJewellery.Application/SeQrJewellery.Application.csproj" />
+    <Project Path="src/SeQrJewellery.Domain/SeQrJewellery.Domain.csproj" />
+    <Project Path="src/SeQrJewellery.Infrastructure/SeQrJewellery.Infrastructure.csproj" />
+  </Folder>
+</Solution>
