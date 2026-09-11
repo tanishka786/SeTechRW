@@ -90,6 +90,21 @@ export const mediaApi = {
     apiClient.put<ApiResponse<ItemMedia>>(`/jewelleryitems/${itemId}/media/${mediaId}/primary`).then(unwrap),
 }
 
+export const certificatesApi = {
+  list: (itemId: string) =>
+    apiClient.get<ApiResponse<ItemMedia[]>>(`/jewelleryitems/${itemId}/certificates`).then(unwrap),
+  upload: (itemId: string, files: File[], certificateKind: string) => {
+    const form = new FormData()
+    files.forEach(f => form.append('files', f))
+    form.append('certificateKind', certificateKind)
+    return apiClient.post<ApiResponse<ItemMedia[]>>(`/jewelleryitems/${itemId}/certificates`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(unwrap)
+  },
+  delete: (itemId: string, mediaId: string) =>
+    apiClient.delete<ApiResponse<boolean>>(`/jewelleryitems/${itemId}/certificates/${mediaId}`).then(unwrap),
+}
+
 // ── Tags ──────────────────────────────────────────────────────────────
 export const tagsApi = {
   scan: (scanValue: string) =>

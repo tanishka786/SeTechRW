@@ -111,7 +111,7 @@ export default function MediaManager({ itemId, pendingFiles = [], onPendingChang
       {/* Server media (edit mode) */}
       {isEdit && !!media?.length && (
         <div className="grid grid-cols-4 gap-3">
-          {media.map(m => (
+          {media.filter(m => m.mediaType !== 'Document').map(m => (
             <div key={m.id} className="relative group rounded-lg overflow-hidden border border-gray-200 aspect-square bg-gray-50">
               {m.mediaType === 'Image' ? (
                 <img src={m.url} alt={m.fileName} className="w-full h-full object-cover" />

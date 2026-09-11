@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Tag, Printer, Plus } from 'lucide-react'
-import { tagsApi, printQueueApi, mediaApi } from '../../../api'
+import { Tag, Printer, Plus, FileText, ExternalLink } from 'lucide-react'
+import { tagsApi, printQueueApi, mediaApi, certificatesApi } from '../../../api'
 import { fmtCurrency, fmtWeight, fmtDate, fmtStoneSpecs, fmtCarat } from '../../../utils/format'
 import { TagType } from '../../../types'
 import type { JewelleryItem } from '../../../types'
@@ -21,6 +21,11 @@ export default function ItemDetail({ item }: { item: JewelleryItem }) {
     queryFn: () => mediaApi.listForItem(item.id),
     initialData: item.media,
   })
+  const { data: certificates } = useQuery({
+    queryKey: ['item-certificates', item.id],
+    queryFn: () => certificatesApi.list(item.id),
+  })
+  const gallery = (media ?? []).filter(m => m.mediaType !== 'Document')
 
   const printMutation = useMutation({
     mutationFn: () => printQueueApi.enqueue({ jewelleryItemId: item.id, tagType: TagType.Barcode, labelTemplate: 'Default', copies: 1, priority: 5 }),
@@ -73,30 +78,30 @@ export default function ItemDetail({ item }: { item: JewelleryItem }) {
       </div>
 
       {/* Media gallery */}
-      {!!media?.length && (
+      {!!gallery.length && (
         <div className="space-y-2">
           <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 aspect-video flex items-center justify-center">
-            {media[Math.min(activeMedia, media.length - 1)]?.mediaType === 'Video' ? (
+            {gallery[Math.min(activeMedia, gallery.length - 1)]?.mediaType === 'Video' ? (
               <video
-                key={media[Math.min(activeMedia, media.length - 1)].id}
-                src={media[Math.min(activeMedia, media.length - 1)].url}
+                key={gallery[Math.min(activeMedia, gallery.length - 1)].id}
+                src={gallery[Math.min(activeMedia, gallery.length - 1)].url}
                 controls className="max-h-full max-w-full"
               />
             ) : (
               <img
-                src={media[Math.min(activeMedia, media.length - 1)]?.url}
+                src={gallery[Math.min(activeMedia, gallery.length - 1)]?.url}
                 alt={item.name}
                 className="max-h-full max-w-full object-contain"
               />
             )}
           </div>
-          {media.length > 1 && (
+          {gallery.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {media.map((m, i) => (
+              {gallery.map((m, i) => (
                 <button
                   key={m.id} type="button" onClick={() => setActiveMedia(i)}
                   className={`w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0 ${
-                    i === Math.min(activeMedia, media.length - 1) ? 'border-amber-500' : 'border-transparent hover:border-gray-300'
+                    i === Math.min(activeMedia, gallery.length - 1) ? 'border-amber-500' : 'border-transparent hover:border-gray-300'
                   }`}
                 >
                   {m.mediaType === 'Video'
@@ -118,6 +123,28 @@ export default function ItemDetail({ item }: { item: JewelleryItem }) {
           </div>
         ))}
       </div>
+
+      {!!certificates?.length && (
+        <div>
+          <h4 className="font-semibold text-gray-700 text-sm flex items-center gap-2 mb-3">
+            <FileText size={15} /> Certificates
+          </h4>
+          <ul className="space-y-2">
+            {certificates.map(c => (
+              <li key={c.id} className="flex items-center justify-between p-3 bg-sky-50 rounded-lg">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-800 truncate">{c.fileName}</p>
+                  <p className="text-xs text-gray-500">{c.certificateKind || 'Certificate'}</p>
+                </div>
+                <a href={c.url} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-sky-700 hover:underline shrink-0 ml-3">
+                  <ExternalLink size={13} /> Open
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Tags */}
       <div>

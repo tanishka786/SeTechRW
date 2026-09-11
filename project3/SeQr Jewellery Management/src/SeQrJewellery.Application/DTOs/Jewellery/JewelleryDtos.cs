@@ -77,11 +77,13 @@ public class ItemMediaDto
     public string Url { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
-    /// <summary>"Image" or "Video"</summary>
+    /// <summary>"Image", "Video", or "Document"</summary>
     public string MediaType { get; set; } = string.Empty;
     public long FileSizeBytes { get; set; }
     public int SortOrder { get; set; }
     public bool IsPrimary { get; set; }
+    /// <summary>BIS, GIA, IGI, Hallmark, etc. when MediaType is Document.</summary>
+    public string? CertificateKind { get; set; }
 }
 
 public class CreateJewelleryItemRequest

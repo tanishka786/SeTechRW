@@ -60,7 +60,8 @@ export interface SkuSuggestion {
 
 export interface ItemMedia {
   id: string; url: string; fileName: string; contentType: string;
-  mediaType: 'Image' | 'Video'; fileSizeBytes: number; sortOrder: number; isPrimary: boolean;
+  mediaType: 'Image' | 'Video' | 'Document'; fileSizeBytes: number; sortOrder: number; isPrimary: boolean;
+  certificateKind?: string | null;
 }
 
 export interface CreateJewelleryItemRequest {

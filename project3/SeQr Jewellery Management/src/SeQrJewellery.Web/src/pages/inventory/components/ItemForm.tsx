@@ -3,11 +3,13 @@ import { useForm, Controller } from 'react-hook-form'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ScanBarcode, Gem } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { inventoryApi, catalogApi, tagsApi, mediaApi } from '../../../api'
+import { inventoryApi, catalogApi, tagsApi, mediaApi, certificatesApi } from '../../../api'
 import { Input, Select, TextArea } from '../../../components/ui/Input'
 import Combobox from '../../../components/ui/Combobox'
 import Button from '../../../components/ui/Button'
 import MediaManager from './MediaManager'
+import CertificateFilesManager from './CertificateFilesManager'
+import type { PendingCertificate } from './CertificateFilesManager'
 import type { JewelleryItem, CreateJewelleryItemRequest, StockTagLookup, StockRangeLookup, SkuSuggestion } from '../../../types'
 import { MakingChargeType } from '../../../types'
 
@@ -50,6 +52,7 @@ export default function ItemForm({ item, onSuccess }: Props) {
   const [tagLookup, setTagLookup] = useState<StockTagLookup | null>(null)
   const [tagChecking, setTagChecking] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [pendingCerts, setPendingCerts] = useState<PendingCertificate[]>([])
 
   const [bulkMode, setBulkMode] = useState(false)
   const [bulkInput, setBulkInput] = useState<'scan' | 'range'>('scan')
@@ -212,11 +215,27 @@ export default function ItemForm({ item, onSuccess }: Props) {
     mutationFn: (data: CreateJewelleryItemRequest) =>
       isEdit ? inventoryApi.update(item!.id, data) : inventoryApi.create(data),
     onSuccess: async (created, variables) => {
-      if (!isEdit && pendingFiles.length && created?.id && !variables.addToExistingSku) {
-        try {
-          await mediaApi.upload(created.id, pendingFiles)
-        } catch {
-          toast.error('Item created, but uploading media failed. You can add media by editing the item.')
+      if (!isEdit && created?.id && !variables.addToExistingSku) {
+        if (pendingFiles.length) {
+          try {
+            await mediaApi.upload(created.id, pendingFiles)
+          } catch {
+            toast.error('Item created, but uploading photos failed. You can add them by editing the item.')
+          }
+        }
+        if (pendingCerts.length) {
+          const byKind = new Map<string, File[]>()
+          for (const p of pendingCerts) {
+            const list = byKind.get(p.kind) ?? []
+            list.push(p.file)
+            byKind.set(p.kind, list)
+          }
+          try {
+            for (const [kind, files] of byKind)
+              await certificatesApi.upload(created.id, files, kind)
+          } catch {
+            toast.error('Item created, but uploading certificates failed. You can add them by editing the item.')
+          }
         }
       }
       toast.success(
@@ -623,7 +642,7 @@ export default function ItemForm({ item, onSuccess }: Props) {
         <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
           <Gem size={16} className="text-violet-700" /> Diamond / stone specs
         </p>
-        <p className="text-xs text-gray-500">4Cs for the centre stone. 1 carat = 0.2 g. Lab + report ID is the GIA/IGI certificate.</p>
+        <p className="text-xs text-gray-500">4Cs for the centre stone. 1 carat = 0.2 g. Lab + report ID is the GIA/IGI certificate — attach the PDF or scan below.</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Input
             label="Carat"
@@ -727,6 +746,15 @@ export default function ItemForm({ item, onSuccess }: Props) {
           Consignment Item
         </label>
       </div>
+
+      {!bulkMode && (
+        <CertificateFilesManager
+          itemId={isEdit ? item!.id : undefined}
+          pending={pendingCerts}
+          onPendingChange={setPendingCerts}
+          defaultKind={watch('certificateLab') || (watch('isBISCertified') ? 'BIS' : 'GIA')}
+        />
+      )}
 
       {mutation.isError && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{String(mutation.error)}</p>}
       {bulkMutation.isError && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{String(bulkMutation.error)}</p>}

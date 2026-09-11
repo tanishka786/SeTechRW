@@ -15,8 +15,10 @@ public class ItemMedia : BaseEntity
     public long FileSizeBytes { get; set; }
     public int SortOrder { get; set; }
     public bool IsPrimary { get; set; }
-    /// <summary>CLIP image embedding (float32 array as bytes) used for search-by-image. Null for videos.</summary>
+    /// <summary>CLIP image embedding (float32 array as bytes) used for search-by-image. Null for videos and documents.</summary>
     public byte[]? Embedding { get; set; }
+    /// <summary>BIS / GIA / IGI etc. when <see cref="MediaType"/> is Document.</summary>
+    public string? CertificateKind { get; set; }
 
     public JewelleryItem JewelleryItem { get; set; } = null!;
 }

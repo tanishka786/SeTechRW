@@ -894,6 +894,7 @@ public class JewelleryItemsController : BaseController
             .OrderByDescending(m => m.IsPrimary).ThenBy(m => m.SortOrder)
             .Select(m => m.StoragePath).FirstOrDefault(),
         Media = i.Media?
+            .Where(m => m.MediaType != Domain.Enums.MediaType.Document)
             .OrderByDescending(m => m.IsPrimary).ThenBy(m => m.SortOrder).ThenBy(m => m.CreatedAt)
             .Select(ItemMediaController.MapToDto).ToList() ?? [],
         IsActive = i.IsActive,

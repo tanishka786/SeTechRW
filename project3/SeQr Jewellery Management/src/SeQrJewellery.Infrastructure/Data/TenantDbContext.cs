@@ -129,6 +129,7 @@ public class TenantDbContext : DbContext, ITenantDbContext
             e.Property(m => m.FileName).HasMaxLength(300).IsRequired();
             e.Property(m => m.ContentType).HasMaxLength(100).IsRequired();
             e.Property(m => m.StoragePath).HasMaxLength(500).IsRequired();
+            e.Property(m => m.CertificateKind).HasMaxLength(20);
             e.HasIndex(m => m.JewelleryItemId);
             e.HasOne(m => m.JewelleryItem)
                 .WithMany(i => i.Media)

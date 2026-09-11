@@ -47,7 +47,7 @@ public class ItemMediaController : BaseController
     {
         var db = await _contextAccessor.GetContextAsync(ct);
         var media = await db.ItemMedia
-            .Where(m => m.JewelleryItemId == itemId)
+            .Where(m => m.JewelleryItemId == itemId && m.MediaType != MediaType.Document)
             .OrderByDescending(m => m.IsPrimary).ThenBy(m => m.SortOrder).ThenBy(m => m.CreatedAt)
             .AsNoTracking()
             .ToListAsync(ct);
@@ -182,5 +182,6 @@ public class ItemMediaController : BaseController
         FileSizeBytes = m.FileSizeBytes,
         SortOrder = m.SortOrder,
         IsPrimary = m.IsPrimary,
+        CertificateKind = m.CertificateKind,
     };
 }

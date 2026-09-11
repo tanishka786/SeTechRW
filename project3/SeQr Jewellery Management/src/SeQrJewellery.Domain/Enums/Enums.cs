@@ -10,7 +10,8 @@ public enum TagType
 public enum MediaType
 {
     Image = 1,
-    Video = 2
+    Video = 2,
+    Document = 3
 }
 
 public enum PrintStatus
